@@ -1,0 +1,6 @@
+{
+  "name": "The Local Pantry - Artisanal Homemade Condiments",
+  "description": "Small-batch condiments, dips, and pantry staples handcrafted with 100% natural ingredients from Banswara, Rajasthan.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
