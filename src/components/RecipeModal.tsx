@@ -91,11 +91,17 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
           {product && (
             <div className="mb-6 p-4 rounded-xl bg-[#fbf2ee] border border-[#efe6e3] flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <img
-                  src={product.imageUrl}
-                  alt={product.name}
-                  className="w-14 h-14 rounded-lg object-cover border border-[#dec0b7]"
-                />
+                {product.imageUrl ? (
+                  <img
+                    src={product.imageUrl}
+                    alt={product.name}
+                    className="w-14 h-14 rounded-lg object-cover border border-[#dec0b7]"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-lg bg-[#f6eee8] border border-[#ddcec7] shrink-0 flex items-center justify-center text-[#8e7b72]">
+                    <span className="material-symbols-outlined text-[20px]">image</span>
+                  </div>
+                )}
                 <div>
                   <span className="text-[10px] uppercase font-bold text-[#9f3c16] tracking-wider block">
                     Essential Pantry Jar

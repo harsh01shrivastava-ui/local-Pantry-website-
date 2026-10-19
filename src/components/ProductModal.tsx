@@ -52,12 +52,26 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-12">
           {/* Product Image Column */}
-          <div className="md:col-span-5 relative bg-[#f5ece9] min-h-[300px] md:min-h-full">
-            <img
-              src={product.imageUrl}
-              alt={product.altText}
-              className="w-full h-full object-cover"
-            />
+          <div className="md:col-span-5 relative bg-[#f5ece9] min-h-[300px] md:min-h-full flex items-center justify-center">
+            {product.imageUrl ? (
+              <img
+                src={product.imageUrl}
+                alt={product.altText}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full min-h-[300px] flex flex-col items-center justify-center bg-[#f6eee8] text-[#a8958c] select-none p-6 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-[#ebdcd5] border border-[#ddcec7] flex items-center justify-center mb-3 shadow-sm text-[#8e7b72]">
+                  <span className="material-symbols-outlined text-[32px]">image</span>
+                </div>
+                <span className="text-[13px] font-semibold tracking-wider uppercase text-[#6d5b53]">
+                  Image Placeholder
+                </span>
+                <span className="text-[11px] text-[#9b887f] mt-1">
+                  Photo coming soon
+                </span>
+              </div>
+            )}
             {product.tag && (
               <span className="absolute top-4 left-4 bg-[#9f3c16] text-white text-[11px] font-semibold px-2.5 py-0.5 rounded-full shadow-sm">
                 {product.tag}

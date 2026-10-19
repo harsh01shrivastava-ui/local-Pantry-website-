@@ -130,11 +130,17 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                         }}
                         className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#fbf2ee] cursor-pointer transition-colors border border-transparent hover:border-[#efe6e3]"
                       >
-                        <img
-                          src={p.imageUrl}
-                          alt={p.name}
-                          className="w-12 h-12 rounded-lg object-cover bg-[#f5ece9]"
-                        />
+                        {p.imageUrl ? (
+                          <img
+                            src={p.imageUrl}
+                            alt={p.name}
+                            className="w-12 h-12 rounded-lg object-cover bg-[#f5ece9]"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-[#f6eee8] border border-[#ddcec7] shrink-0 flex items-center justify-center text-[#8e7b72]">
+                            <span className="material-symbols-outlined text-[18px]">image</span>
+                          </div>
+                        )}
                         <div className="flex-1 min-w-0">
                           <h5 className="font-serif text-[16px] text-[#1e1b19] font-medium leading-tight">
                             {p.name}

@@ -36,12 +36,12 @@ export default function App() {
   // Pre-seed cart with 2 items to match the "2" badge in the provided screenshot!
   const [cartItems, setCartItems] = useState<CartItem[]>([
     {
-      product: PANTRY_PRODUCTS[0], // Crunchy Chilli Oil
+      product: PANTRY_PRODUCTS[0], // Smokey Tandoori
       quantity: 1,
       jarSize: 'Standard',
     },
     {
-      product: PANTRY_PRODUCTS[1], // Farm-Fresh Basil Pesto
+      product: PANTRY_PRODUCTS[1], // Mint Dip
       quantity: 1,
       jarSize: 'Standard',
     },

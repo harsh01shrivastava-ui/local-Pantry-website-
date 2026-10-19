@@ -165,13 +165,27 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                 className="group flex flex-col bg-white rounded-xl overflow-hidden shadow-[0_2px_10px_rgba(42,38,36,0.04)] border border-[#efe6e3] hover:shadow-lg transition-all duration-300 cursor-pointer"
               >
                 {/* Image Container with Badges */}
-                <div className="relative overflow-hidden aspect-[4/3] bg-[#f5ece9]">
-                  <img
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    alt={product.altText}
-                    src={product.imageUrl}
-                    loading="lazy"
-                  />
+                <div className="relative overflow-hidden aspect-[4/3] bg-[#f5ece9] flex items-center justify-center">
+                  {product.imageUrl ? (
+                    <img
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      alt={product.altText}
+                      src={product.imageUrl}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-[#f6eee8] text-[#a8958c] select-none p-6 text-center transition-colors group-hover:bg-[#f2e5dd]">
+                      <div className="w-12 h-12 rounded-xl bg-[#ebdcd5] border border-[#ddcec7] flex items-center justify-center mb-2.5 shadow-sm text-[#8e7b72]">
+                        <span className="material-symbols-outlined text-[24px]">image</span>
+                      </div>
+                      <span className="text-[12px] font-semibold tracking-wider uppercase text-[#6d5b53]">
+                        Image Placeholder
+                      </span>
+                      <span className="text-[11px] text-[#9b887f] mt-0.5">
+                        Photo coming soon
+                      </span>
+                    </div>
+                  )}
 
                   {/* Top-Left Tag Badge */}
                   {product.tag && (
