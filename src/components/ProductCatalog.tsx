@@ -241,9 +241,15 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                     </h3>
 
                     {/* Brief description */}
-                    <p className="text-[13px] leading-relaxed text-[#57423b] mb-4 line-clamp-2">
+                    <p className="text-[13px] leading-relaxed text-[#57423b] mb-3 line-clamp-2">
                       {product.description}
                     </p>
+
+                    {/* Shelf Life info */}
+                    <div className="flex items-center gap-1.5 text-[11px] text-[#516444] font-medium mb-1">
+                      <span className="material-symbols-outlined text-[14px]">schedule</span>
+                      <span>Shelf life: {product.shelfLife}</span>
+                    </div>
                   </div>
 
                   {/* Pricing and Action Button */}

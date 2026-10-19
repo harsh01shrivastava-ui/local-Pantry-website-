@@ -1,4 +1,5 @@
 import React from 'react';
+import logoImg from '../assets/images/logo.png';
 
 interface HeaderProps {
   activeTab: string;
@@ -40,32 +41,32 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Main Header Bar */}
-      <div className="h-20 max-w-[1280px] mx-auto px-4 lg:px-8 flex items-center justify-between gap-4">
+      <div className="min-h-[88px] md:min-h-[96px] max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-3.5 md:py-4 flex items-center justify-between gap-6">
         {/* Brand Lockup */}
         <button
           onClick={() => handleNavClick('shop')}
-          className="flex items-center gap-3 text-left group focus:outline-none"
+          className="flex items-center gap-3.5 text-left group focus:outline-none"
         >
           <img
             alt="The Local Pantry Logo"
-            className="h-8 md:h-9 w-auto object-contain transition-transform group-hover:scale-105"
-            src="https://lh3.googleusercontent.com/aida/AEtjO1WN66p7RjXeS9XxdKoqvHKg4QLUwgyLahcIK-as2sgOka-lINGNQl8uWOfioe-2w_3pbaFO1QD_E-z7MiMT4r-8XQNyPpNs380c-HPBmAuV3SfCM5X_TQi4stsJ0PRhL5-FhK0mlsathasRKfNNprA-eQuYt7X6YGg8zSgwe7rqhG1R1ged9oErsV_Gb4SpGDsEFaOvBohxn6ohKVeBWOEGdRF7As6OT6MHbB8C3kR_6p4HxOcDJst8uvw"
+            className="h-13 md:h-16 w-auto object-contain rounded-lg transition-transform group-hover:scale-105 shadow-xs border border-[#dec0b7]/30"
+            src={logoImg}
           />
           <div className="flex flex-col">
-            <span className="font-serif text-[22px] md:text-[24px] font-semibold text-[#1e1b19] tracking-tight leading-none">
+            <span className="font-serif text-[23px] md:text-[27px] font-semibold text-[#1e1b19] tracking-tight leading-none">
               The Local Pantry
             </span>
-            <span className="text-[11px] text-[#57423b] italic tracking-tight mt-0.5">
+            <span className="text-[12px] md:text-[13px] text-[#57423b] italic tracking-tight mt-1">
               Curated with love in Banswara
             </span>
           </div>
         </button>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden lg:flex items-center gap-7">
+        <nav className="hidden lg:flex items-center gap-8 xl:gap-10">
           <button
             onClick={() => handleNavClick('shop')}
-            className={`py-1 text-[15px] transition-colors whitespace-nowrap ${
+            className={`py-2 text-[15px] font-medium tracking-wide transition-colors whitespace-nowrap ${
               activeTab === 'shop'
                 ? 'text-[#9f3c16] font-semibold border-b-2 border-[#9f3c16]'
                 : 'text-[#57423b] hover:text-[#9f3c16]'
@@ -75,7 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => handleNavClick('our-story')}
-            className={`py-1 text-[15px] transition-colors whitespace-nowrap ${
+            className={`py-2 text-[15px] font-medium tracking-wide transition-colors whitespace-nowrap ${
               activeTab === 'our-story'
                 ? 'text-[#9f3c16] font-semibold border-b-2 border-[#9f3c16]'
                 : 'text-[#57423b] hover:text-[#9f3c16]'
@@ -85,7 +86,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => handleNavClick('best-sellers')}
-            className={`py-1 text-[15px] transition-colors whitespace-nowrap ${
+            className={`py-2 text-[15px] font-medium tracking-wide transition-colors whitespace-nowrap ${
               activeTab === 'best-sellers'
                 ? 'text-[#9f3c16] font-semibold border-b-2 border-[#9f3c16]'
                 : 'text-[#57423b] hover:text-[#9f3c16]'
@@ -95,17 +96,17 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => handleNavClick('recipes')}
-            className={`py-1 text-[15px] transition-colors whitespace-nowrap ${
+            className={`py-2 text-[15px] font-medium tracking-wide transition-colors whitespace-nowrap ${
               activeTab === 'recipes'
                 ? 'text-[#9f3c16] font-semibold border-b-2 border-[#9f3c16]'
                 : 'text-[#57423b] hover:text-[#9f3c16]'
             }`}
           >
-            Recipes/Inspiration
+            Recipes &amp; Ideas
           </button>
           <button
             onClick={() => handleNavClick('contact')}
-            className={`py-1 text-[15px] transition-colors whitespace-nowrap ${
+            className={`py-2 text-[15px] font-medium tracking-wide transition-colors whitespace-nowrap ${
               activeTab === 'contact'
                 ? 'text-[#9f3c16] font-semibold border-b-2 border-[#9f3c16]'
                 : 'text-[#57423b] hover:text-[#9f3c16]'
@@ -116,14 +117,14 @@ export const Header: React.FC<HeaderProps> = ({
         </nav>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3.5">
           {/* Search Trigger */}
           <button
             onClick={onOpenSearch}
             aria-label="Search pantry catalog"
-            className="text-[#57423b] hover:text-[#9f3c16] transition-colors flex items-center p-2 rounded-full hover:bg-[#efe6e3]/60 focus:outline-none"
+            className="text-[#57423b] hover:text-[#9f3c16] transition-colors flex items-center p-2.5 rounded-full hover:bg-[#efe6e3]/70 focus:outline-none"
           >
-            <span className="material-symbols-outlined text-[22px]">search</span>
+            <span className="material-symbols-outlined text-[23px]">search</span>
           </button>
 
           {/* Wishlist Trigger */}

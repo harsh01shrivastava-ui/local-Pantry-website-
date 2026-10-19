@@ -23,8 +23,9 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
   if (!product) return null;
 
+  const unit = product.weight.replace(/[0-9]/g, '') || 'ml';
   const currentPrice = jarSize === 'Standard' ? product.price : Math.round(product.price * 1.75);
-  const currentWeight = jarSize === 'Standard' ? product.weight : `${parseInt(product.weight) * 2}g`;
+  const currentWeight = jarSize === 'Standard' ? product.weight : `${parseInt(product.weight) * 2}${unit}`;
 
   const handleAdd = () => {
     onAddToCart(product, quantity, jarSize);
@@ -139,7 +140,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                         : 'border-[#efe6e3] hover:border-[#dec0b7] text-[#1e1b19]'
                     }`}
                   >
-                    <span>Grand Jar ({parseInt(product.weight) * 2}g)</span>
+                    <span>Grand Jar ({parseInt(product.weight) * 2}{unit})</span>
                     <span className="text-[11px] opacity-75 font-normal">₹{Math.round(product.price * 1.75)} (Save 12%)</span>
                   </button>
                 </div>

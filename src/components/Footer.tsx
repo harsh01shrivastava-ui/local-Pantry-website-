@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import logoImg from '../assets/images/logo.png';
 
 interface FooterProps {
   onNavClick: (tab: string) => void;
@@ -22,8 +23,12 @@ export const Footer: React.FC<FooterProps> = ({ onNavClick }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-12">
           {/* Brand Info */}
           <div className="lg:col-span-4 flex flex-col items-start">
-            <div className="flex items-center gap-2.5 mb-3">
-              <span className="material-symbols-outlined text-[#9f3c16] text-[28px]">spa</span>
+            <div className="flex items-center gap-3 mb-3">
+              <img
+                src={logoImg}
+                alt="The Local Pantry Logo"
+                className="h-9 w-auto object-contain rounded-md"
+              />
               <span className="font-serif text-[24px] font-semibold text-[#1e1b19]">
                 The Local Pantry
               </span>

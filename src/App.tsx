@@ -159,7 +159,7 @@ export default function App() {
       />
 
       {/* Main Content Area (padded for fixed header) */}
-      <main className="w-full pt-28 flex-1">
+      <main className="w-full pt-[124px] md:pt-[134px] flex-1">
         {activeTab === 'shop' || activeTab === 'best-sellers' ? (
           <div>
             {/* Hero Section */}

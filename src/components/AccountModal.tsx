@@ -75,9 +75,9 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                   </span>
                 </div>
                 <p className="text-[#57423b] mt-0.5">
-                  1x Crunchy Chilli Oil (200g), 1x Basil Pesto (180g)
+                  1x Sichuan Chilli Oil (200ml), 1x Pesto (200ml)
                 </p>
-                <span className="text-[11px] text-[#8a726a]">Dispatched Oct 4, 2026 • ₹805</span>
+                <span className="text-[11px] text-[#8a726a]">Dispatched Oct 4, 2026 • ₹760</span>
               </div>
               <button
                 onClick={() => {
