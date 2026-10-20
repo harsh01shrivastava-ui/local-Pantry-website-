@@ -42,19 +42,19 @@ export const DispatchBanner: React.FC<DispatchBannerProps> = ({ onOpenGiftingMod
   };
 
   return (
-    <section className="w-full bg-[#fff8f5] py-16">
+    <section className="w-full bg-[#fff8f5] py-12 sm:py-16">
       <div className="max-w-[1280px] mx-auto px-4 lg:px-8">
-        <div className="bg-gradient-to-br from-[#f5ece9] to-[#efe6e3] rounded-2xl p-6 sm:p-10 lg:p-12 relative overflow-hidden shadow-sm border border-[#dec0b7]/40">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center relative z-10">
+        <div className="bg-gradient-to-br from-[#f5ece9] to-[#efe6e3] rounded-2xl p-5 sm:p-10 lg:p-12 relative overflow-hidden shadow-sm border border-[#dec0b7]/40">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-center relative z-10">
             {/* Left Column: Pincode Checker */}
             <div className="lg:col-span-7">
-              <span className="text-[12px] text-[#9f3c16] uppercase tracking-widest font-semibold block mb-2 font-sans">
+              <span className="text-[11px] sm:text-[12px] text-[#9f3c16] uppercase tracking-widest font-semibold block mb-2 font-sans">
                 Pantry Direct Dispatch
               </span>
-              <h2 className="font-serif text-[28px] sm:text-[36px] text-[#1e1b19] mb-3 font-normal tracking-tight leading-snug">
+              <h2 className="font-serif text-[24px] xs:text-[28px] sm:text-[36px] text-[#1e1b19] mb-3 font-normal tracking-tight leading-snug">
                 Catch us at the next weekend artisan market or order your weekly drop.
               </h2>
-              <p className="text-[15px] leading-relaxed text-[#57423b] max-w-lg mb-6 font-sans">
+              <p className="text-[14px] sm:text-[15px] leading-relaxed text-[#57423b] max-w-lg mb-6 font-sans">
                 We ship our fresh batches across India every Tuesday &amp; Friday with thermal bubble insulation and fragile glass protection.
               </p>
 
@@ -66,7 +66,7 @@ export const DispatchBanner: React.FC<DispatchBannerProps> = ({ onOpenGiftingMod
                 >
                   Check Delivery Time for Your City
                 </label>
-                <form onSubmit={handleCheckPincode} className="flex gap-2">
+                <form onSubmit={handleCheckPincode} className="flex flex-col xs:flex-row gap-2">
                   <input
                     id="pincode-input"
                     type="text"

@@ -61,88 +61,90 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
   };
 
   return (
-    <section className="w-full bg-[#fff8f5] py-14 lg:py-16" id="shop-catalog">
+    <section className="w-full bg-[#fff8f5] py-12 sm:py-16" id="shop-catalog">
       <div className="max-w-[1280px] mx-auto px-4 lg:px-8">
         {/* Section Heading & Category Tabs */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-5 sm:gap-6 mb-8 sm:mb-10">
           <div>
-            <span className="text-[12px] text-[#516444] tracking-widest uppercase font-semibold block font-sans">
+            <span className="text-[11px] sm:text-[12px] text-[#516444] tracking-widest uppercase font-semibold block font-sans">
               Small-Batch Provisions
             </span>
-            <h2 className="font-serif text-[32px] sm:text-[40px] text-[#1e1b19] mt-1 font-normal tracking-tight">
+            <h2 className="font-serif text-[28px] xs:text-[32px] sm:text-[40px] text-[#1e1b19] mt-1 font-normal tracking-tight">
               From Our Kitchen Pantry
             </h2>
-            <p className="text-[15px] text-[#57423b] max-w-lg mt-2 font-sans leading-relaxed">
-              Hand-stirred condiments and pantry staples crafted to elevate your daily sourdough toasts, pastas, noodles, and dosas.
+            <p className="text-[14px] sm:text-[15px] text-[#57423b] max-w-lg mt-2 font-sans leading-relaxed">
+              Hand-stirred condiments and pantry staples crafted to elevate your daily toasts, pastas, noodles, and dosas.
             </p>
           </div>
 
-          {/* Category Filter Controls */}
-          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-[#f5ece9] rounded-lg self-start md:self-auto border border-[#dec0b7]/40">
-            <button
-              onClick={() => setSelectedCategory('all')}
-              className={`px-3.5 py-1.5 rounded text-[13px] font-semibold transition-colors ${
-                selectedCategory === 'all'
-                  ? 'bg-[#9f3c16] text-white shadow-sm'
-                  : 'text-[#57423b] hover:text-[#1e1b19]'
-              }`}
-            >
-              All Favorites
-            </button>
-            <button
-              onClick={() => setSelectedCategory('chili')}
-              className={`px-3.5 py-1.5 rounded text-[13px] font-semibold transition-colors ${
-                selectedCategory === 'chili'
-                  ? 'bg-[#9f3c16] text-white shadow-sm'
-                  : 'text-[#57423b] hover:text-[#1e1b19]'
-              }`}
-            >
-              Chili Oils &amp; Crisps
-            </button>
-            <button
-              onClick={() => setSelectedCategory('pesto')}
-              className={`px-3.5 py-1.5 rounded text-[13px] font-semibold transition-colors ${
-                selectedCategory === 'pesto'
-                  ? 'bg-[#9f3c16] text-white shadow-sm'
-                  : 'text-[#57423b] hover:text-[#1e1b19]'
-              }`}
-            >
-              Fresh Pesto &amp; Dips
-            </button>
-            <button
-              onClick={() => setSelectedCategory('sauces')}
-              className={`px-3.5 py-1.5 rounded text-[13px] font-semibold transition-colors ${
-                selectedCategory === 'sauces'
-                  ? 'bg-[#9f3c16] text-white shadow-sm'
-                  : 'text-[#57423b] hover:text-[#1e1b19]'
-              }`}
-            >
-              Simmered Sauces
-            </button>
-            <button
-              onClick={() => setSelectedCategory('heritage')}
-              className={`px-3.5 py-1.5 rounded text-[13px] font-semibold transition-colors ${
-                selectedCategory === 'heritage'
-                  ? 'bg-[#9f3c16] text-white shadow-sm'
-                  : 'text-[#57423b] hover:text-[#1e1b19]'
-              }`}
-            >
-              Heritage &amp; Treats
-            </button>
+          {/* Horizontally scrollable category filters on mobile */}
+          <div className="w-full md:w-auto overflow-hidden">
+            <div className="flex items-center gap-1.5 p-1 bg-[#f5ece9] rounded-xl border border-[#dec0b7]/40 overflow-x-auto no-scrollbar py-1.5 px-2">
+              <button
+                onClick={() => setSelectedCategory('all')}
+                className={`px-3.5 py-2 rounded-lg text-[13px] font-semibold whitespace-nowrap transition-colors cursor-pointer min-h-[38px] ${
+                  selectedCategory === 'all'
+                    ? 'bg-[#9f3c16] text-white shadow-xs'
+                    : 'text-[#57423b] hover:text-[#1e1b19]'
+                }`}
+              >
+                All Favorites
+              </button>
+              <button
+                onClick={() => setSelectedCategory('chili')}
+                className={`px-3.5 py-2 rounded-lg text-[13px] font-semibold whitespace-nowrap transition-colors cursor-pointer min-h-[38px] ${
+                  selectedCategory === 'chili'
+                    ? 'bg-[#9f3c16] text-white shadow-xs'
+                    : 'text-[#57423b] hover:text-[#1e1b19]'
+                }`}
+              >
+                Chili Oils &amp; Crisps
+              </button>
+              <button
+                onClick={() => setSelectedCategory('pesto')}
+                className={`px-3.5 py-2 rounded-lg text-[13px] font-semibold whitespace-nowrap transition-colors cursor-pointer min-h-[38px] ${
+                  selectedCategory === 'pesto'
+                    ? 'bg-[#9f3c16] text-white shadow-xs'
+                    : 'text-[#57423b] hover:text-[#1e1b19]'
+                }`}
+              >
+                Fresh Pesto &amp; Dips
+              </button>
+              <button
+                onClick={() => setSelectedCategory('sauces')}
+                className={`px-3.5 py-2 rounded-lg text-[13px] font-semibold whitespace-nowrap transition-colors cursor-pointer min-h-[38px] ${
+                  selectedCategory === 'sauces'
+                    ? 'bg-[#9f3c16] text-white shadow-xs'
+                    : 'text-[#57423b] hover:text-[#1e1b19]'
+                }`}
+              >
+                Simmered Sauces
+              </button>
+              <button
+                onClick={() => setSelectedCategory('heritage')}
+                className={`px-3.5 py-2 rounded-lg text-[13px] font-semibold whitespace-nowrap transition-colors cursor-pointer min-h-[38px] ${
+                  selectedCategory === 'heritage'
+                    ? 'bg-[#9f3c16] text-white shadow-xs'
+                    : 'text-[#57423b] hover:text-[#1e1b19]'
+                }`}
+              >
+                Heritage &amp; Treats
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Quick Sorting / Results Count */}
+        {/* Quick Sorting & Results Count */}
         <div className="flex items-center justify-between text-xs text-[#57423b] mb-6 pb-2 border-b border-[#efe6e3]">
           <span>
-            Showing <strong className="text-[#1e1b19]">{filteredProducts.length}</strong> small-batch creations
+            Showing <strong className="text-[#1e1b19]">{filteredProducts.length}</strong> creations
           </span>
-          <div className="flex items-center gap-2">
-            <span>Sort by:</span>
+          <div className="flex items-center gap-1.5">
+            <span>Sort:</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="bg-transparent text-[#1e1b19] font-medium border-0 focus:outline-none cursor-pointer"
+              className="bg-transparent text-[#1e1b19] font-medium border-0 focus:outline-none cursor-pointer py-1"
             >
               <option value="featured">Featured Curations</option>
               <option value="price-asc">Price: Low to High</option>
@@ -152,8 +154,8 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
           </div>
         </div>
 
-        {/* Product Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="products-grid">
+        {/* Product Cards Grid: Stacked 1-col on mobile, 2-col on tablet, 3-col on desktop */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-8" id="products-grid">
           {filteredProducts.map((product) => {
             const isWishlisted = wishlistIds.has(product.id);
             const isJustAdded = addedProductId === product.id;
@@ -162,10 +164,10 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
               <div
                 key={product.id}
                 onClick={() => onSelectProduct(product)}
-                className="group flex flex-col bg-white rounded-xl overflow-hidden shadow-[0_2px_10px_rgba(42,38,36,0.04)] border border-[#efe6e3] hover:shadow-lg transition-all duration-300 cursor-pointer"
+                className="group flex flex-col bg-white rounded-2xl overflow-hidden shadow-[0_2px_10px_rgba(42,38,36,0.04)] border border-[#efe6e3] hover:shadow-xl transition-all duration-300 cursor-pointer"
               >
                 {/* Image Container with Badges */}
-                <div className="relative overflow-hidden aspect-[4/3] bg-[#f5ece9] flex items-center justify-center">
+                <div className="relative overflow-hidden aspect-[16/10] sm:aspect-[4/3] bg-[#f5ece9] flex items-center justify-center">
                   {product.imageUrl ? (
                     <img
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -180,9 +182,6 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                       </div>
                       <span className="text-[12px] font-semibold tracking-wider uppercase text-[#6d5b53]">
                         Image Placeholder
-                      </span>
-                      <span className="text-[11px] text-[#9b887f] mt-0.5">
-                        Photo coming soon
                       </span>
                     </div>
                   )}
@@ -205,12 +204,12 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                       onToggleWishlist(product.id);
                     }}
                     aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-                    className={`absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center transition-colors shadow-sm ${
+                    className={`absolute top-3 right-3 w-9 h-9 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center transition-colors shadow-sm cursor-pointer ${
                       isWishlisted ? 'text-[#9f3c16]' : 'text-[#57423b] hover:text-[#9f3c16]'
                     }`}
                   >
                     <span
-                      className={`material-symbols-outlined text-[18px] ${
+                      className={`material-symbols-outlined text-[19px] ${
                         isWishlisted ? 'fill-current' : ''
                       }`}
                     >
@@ -220,13 +219,13 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                 </div>
 
                 {/* Card Details */}
-                <div className="p-6 flex flex-col flex-grow justify-between">
+                <div className="p-4 sm:p-6 flex flex-col flex-grow justify-between">
                   <div>
                     {/* Meta Row: Weight & Rating */}
                     <div className="flex items-center justify-between text-[#57423b] text-[12px] font-sans mb-1.5">
-                      <span>{product.subtitle}</span>
-                      <span className="flex items-center text-[#805200] font-medium gap-0.5">
-                        <span className="material-symbols-outlined text-[15px] fill-current">
+                      <span className="font-medium">{product.subtitle}</span>
+                      <span className="flex items-center text-[#805200] font-semibold gap-0.5">
+                        <span className="material-symbols-outlined text-[15px] fill-current text-[#9f6912]">
                           star
                         </span>
                         <span>
@@ -236,7 +235,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                     </div>
 
                     {/* Product Title */}
-                    <h3 className="font-serif text-[22px] font-medium text-[#1e1b19] mb-2 group-hover:text-[#9f3c16] transition-colors leading-snug">
+                    <h3 className="font-serif text-[20px] sm:text-[22px] font-medium text-[#1e1b19] mb-1.5 group-hover:text-[#9f3c16] transition-colors leading-snug">
                       {product.name}
                     </h3>
 
@@ -252,20 +251,20 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                     </div>
                   </div>
 
-                  {/* Pricing and Action Button */}
-                  <div className="pt-4 border-t border-[#f5ece9] flex items-center justify-between mt-auto">
-                    <div className="flex flex-col">
-                      <span className="text-[11px] uppercase tracking-wider text-[#57423b] font-semibold">
+                  {/* Pricing and Mobile-Friendly Large Tap Action Button */}
+                  <div className="pt-4 border-t border-[#f5ece9] flex items-center justify-between gap-3 mt-4">
+                    <div className="flex flex-col shrink-0">
+                      <span className="text-[10px] uppercase tracking-wider text-[#8a726a] font-semibold">
                         Price
                       </span>
-                      <span className="font-serif text-[22px] font-medium text-[#1e1b19] tabular-nums">
+                      <span className="font-serif text-[20px] sm:text-[22px] font-medium text-[#1e1b19] tabular-nums">
                         ₹{product.price}
                       </span>
                     </div>
 
                     <button
                       onClick={(e) => handleAddClick(e, product)}
-                      className={`px-4 py-2 rounded-lg font-sans text-[13px] font-semibold transition-all flex items-center gap-1.5 shadow-sm ${
+                      className={`min-h-[44px] px-4 py-2.5 rounded-xl font-sans text-[13px] sm:text-[14px] font-semibold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer ${
                         isJustAdded
                           ? 'bg-[#516444] text-white'
                           : product.isPreOrder

@@ -6,22 +6,22 @@ interface StorySectionProps {
 
 export const StorySection: React.FC<StorySectionProps> = ({ onReadMoreStory }) => {
   return (
-    <section className="w-full bg-[#f5ece9] py-16 overflow-hidden border-b border-[#efe6e3]">
+    <section className="w-full bg-[#f5ece9] py-12 sm:py-16 overflow-hidden border-b border-[#efe6e3]">
       <div className="max-w-[1280px] mx-auto px-4 lg:px-8">
-        <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(42,38,36,0.04)] p-6 sm:p-8 lg:p-12 border border-[#efe6e3]">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+        <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(42,38,36,0.04)] p-5 sm:p-8 lg:p-12 border border-[#efe6e3]">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-center">
             {/* Story Narrative */}
             <div className="lg:col-span-7 flex flex-col items-start">
-              <div className="inline-flex items-center gap-1.5 text-[#9f3c16] text-[12px] uppercase tracking-widest font-semibold mb-2 font-sans">
-                <span className="material-symbols-outlined text-[18px]">favorite</span>
+              <div className="inline-flex items-center gap-1.5 text-[#9f3c16] text-[11px] sm:text-[12px] uppercase tracking-widest font-semibold mb-2 font-sans">
+                <span className="material-symbols-outlined text-[17px]">favorite</span>
                 <span>Our Roots &amp; Conviction</span>
               </div>
 
-              <h2 className="font-serif text-[32px] sm:text-[40px] text-[#1e1b19] mb-4 font-normal tracking-tight">
+              <h2 className="font-serif text-[26px] xs:text-[30px] sm:text-[40px] text-[#1e1b19] mb-3 sm:mb-4 font-normal tracking-tight">
                 Born in a Home Kitchen in Banswara
               </h2>
 
-              <p className="text-[17px] leading-relaxed text-[#57423b] mb-4 font-sans">
+              <p className="text-[15px] sm:text-[17px] leading-relaxed text-[#57423b] mb-3 sm:mb-4 font-sans">
                 What began as small, handwritten jars gifted to close friends and visiting family across southern Rajasthan has quietly evolved into a dedicated pantry of mindful essentials.
               </p>
 

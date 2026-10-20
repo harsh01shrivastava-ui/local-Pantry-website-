@@ -56,7 +56,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
           <input
             type="text"
             autoFocus
-            placeholder="Search garlic chili crisp, basil pesto, gunpowder podi, recipes..."
+            placeholder="Search chili oil, pesto, podi, recipes..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="flex-1 bg-transparent text-sm sm:text-base text-[#1e1b19] placeholder:text-[#8a726a] outline-none"

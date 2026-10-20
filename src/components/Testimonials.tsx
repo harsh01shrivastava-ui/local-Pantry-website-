@@ -7,22 +7,22 @@ interface TestimonialsProps {
 
 export const Testimonials: React.FC<TestimonialsProps> = ({ reviews }) => {
   return (
-    <section className="w-full bg-[#fbf2ee] py-16 border-b border-[#f5ece9]">
+    <section className="w-full bg-[#fbf2ee] py-12 sm:py-16 border-b border-[#f5ece9]">
       <div className="max-w-[1280px] mx-auto px-4 lg:px-8">
-        <div className="text-center max-w-xl mx-auto mb-10">
-          <span className="text-[12px] text-[#516444] tracking-widest uppercase font-semibold block font-sans">
+        <div className="text-center max-w-xl mx-auto mb-8 sm:mb-10">
+          <span className="text-[11px] sm:text-[12px] text-[#516444] tracking-widest uppercase font-semibold block font-sans">
             Kitchen Praise
           </span>
-          <h2 className="font-serif text-[32px] sm:text-[38px] text-[#1e1b19] mt-1 font-normal tracking-tight">
+          <h2 className="font-serif text-[26px] xs:text-[30px] sm:text-[38px] text-[#1e1b19] mt-1 font-normal tracking-tight">
             Loved Across Breakfast &amp; Dinner Tables
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
           {reviews.slice(0, 3).map((review) => (
             <div
               key={review.id}
-              className="bg-white p-6 rounded-xl shadow-[0_2px_8px_rgba(42,38,36,0.04)] border border-[#efe6e3] flex flex-col justify-between"
+              className="bg-white p-5 sm:p-6 rounded-2xl shadow-[0_2px_8px_rgba(42,38,36,0.04)] border border-[#efe6e3] flex flex-col justify-between"
             >
               <div>
                 {/* 5-star row */}

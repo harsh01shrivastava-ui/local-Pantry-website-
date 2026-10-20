@@ -1,0 +1,425 @@
+import { createClient, User } from '@supabase/supabase-js';
+import { CustomerOrder, OrderStatus, UserProfile } from '../types/auth';
+import { Product } from '../types';
+
+import smokeyTandooriImg from '../assets/images/smokey_tandoori.png';
+import chilliOilImg from '../assets/images/chilli_oil.png';
+import pestoImg from '../assets/images/pesto.png';
+import pizzaSauceImg from '../assets/images/pizza_sauce.png';
+import mintDipImg from '../assets/images/mint_dip.png';
+import podiImg from '../assets/images/podi.png';
+import kesariShrikhandImg from '../assets/images/Kesari_shrikhand.png';
+import hummusImg from '../assets/images/Hummus.png';
+
+export const LOCAL_PRODUCT_IMAGES: Record<string, string> = {
+  'smokey-tandoori': smokeyTandooriImg,
+  'sichuan-chilli-oil': chilliOilImg,
+  'pesto': pestoImg,
+  'chunky-pizza-sauce': pizzaSauceImg,
+  'pizza-sauce': pizzaSauceImg,
+  'mint-dip': mintDipImg,
+  'podi': podiImg,
+  'kesari-shrikhand': kesariShrikhandImg,
+  'hummus': hummusImg,
+  'apple-tam-jam': '',
+};
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
+// Configured check ensures placeholders don't cause unhandled network crashes
+export const isSupabaseConfigured = Boolean(
+  supabaseUrl &&
+  supabaseAnonKey &&
+  supabaseUrl.startsWith('https://') &&
+  !supabaseUrl.includes('your-project-id') &&
+  !supabaseAnonKey.includes('your-anon-public-key')
+);
+
+// Fallback dummy credentials if real Supabase keys are not yet provided
+const fallbackUrl = 'https://placeholder-project.supabase.co';
+const fallbackKey = 'placeholder-anon-key';
+
+export const supabase = createClient(
+  isSupabaseConfigured ? supabaseUrl : fallbackUrl,
+  isSupabaseConfigured ? supabaseAnonKey : fallbackKey,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  }
+);
+
+export const OWNER_EMAIL = (
+  import.meta.env.VITE_OWNER_EMAIL || 'owner@thelocalpantry.in'
+).toLowerCase().trim();
+
+/**
+ * Checks if an authenticated Supabase user has Store Owner permissions.
+ * Authorizes if email matches configured OWNER_EMAIL or user_metadata.role === 'owner'.
+ */
+export const isUserOwner = (user: User | null): boolean => {
+  if (!user) return false;
+  const userEmail = (user.email || '').toLowerCase().trim();
+  const metadataRole = user.user_metadata?.role;
+  return userEmail === OWNER_EMAIL || metadataRole === 'owner';
+};
+
+// ==========================================
+// SUPABASE DATABASE OPERATIONS
+// ==========================================
+
+/**
+ * Fetch all products from Supabase 'products' table.
+ */
+export async function getSupabaseProducts(): Promise<{ data: Product[] | null; error: any }> {
+  if (!isSupabaseConfigured) {
+    return { data: null, error: new Error('Supabase is not configured yet') };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('name', { ascending: true });
+
+    if (error) throw error;
+
+    if (data && data.length > 0) {
+      const mapped: Product[] = data.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        subtitle: item.subtitle || '',
+        weight: item.weight || '',
+        price: Number(item.price),
+        rating: Number(item.rating || 4.8),
+        reviewCount: Number(item.review_count || 50),
+        tag: item.tag,
+        tagType: item.tag_type,
+        description: item.description || '',
+        longDescription: item.long_description || item.description || '',
+        imageUrl: LOCAL_PRODUCT_IMAGES[item.id] !== undefined ? LOCAL_PRODUCT_IMAGES[item.id] : (item.image_url || ''),
+        altText: item.alt_text || item.name,
+        ingredients: item.ingredients || [],
+        pairingSuggestions: item.pairing_suggestions || [],
+        shelfLife: item.shelf_life || '4 weeks',
+        heatLevel: item.heat_level || 'Mild',
+        dietary: item.dietary || ['Vegetarian', 'Preservative-Free'],
+      }));
+      return { data: mapped, error: null };
+    }
+
+    return { data: [], error: null };
+  } catch (err: any) {
+    console.warn('Could not fetch products from Supabase:', err.message);
+    return { data: null, error: err };
+  }
+}
+
+/**
+ * Update product price in Supabase
+ */
+export async function updateSupabaseProductPrice(productId: string, price: number) {
+  if (!isSupabaseConfigured) return { error: null };
+  return await supabase
+    .from('products')
+    .update({ price })
+    .eq('id', productId);
+}
+
+/**
+ * Update product stock status in Supabase
+ */
+export async function updateSupabaseProductStock(productId: string, stock_status: string) {
+  if (!isSupabaseConfigured) return { error: null };
+  return await supabase
+    .from('products')
+    .update({ stock_status })
+    .eq('id', productId);
+}
+
+/**
+ * Fetch all customer orders from Supabase 'orders' table
+ */
+export async function getSupabaseOrders(): Promise<{ data: CustomerOrder[] | null; error: any }> {
+  if (!isSupabaseConfigured) {
+    return { data: null, error: new Error('Supabase is not configured yet') };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    if (data) {
+      const mapped: CustomerOrder[] = data.map((row: any) => ({
+        id: row.id,
+        customerName: row.customer_name,
+        customerEmail: row.customer_email,
+        customerPhone: row.customer_phone,
+        shippingAddress: row.shipping_address,
+        city: row.city,
+        pincode: row.pincode,
+        date: new Date(row.created_at || Date.now()).toLocaleDateString('en-IN', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        items: row.items || [],
+        subtotal: Number(row.subtotal),
+        shippingFee: Number(row.shipping_fee || 0),
+        total: Number(row.total),
+        paymentMethod: row.payment_method || 'UPI',
+        status: row.status as OrderStatus,
+        notes: row.notes,
+      }));
+      return { data: mapped, error: null };
+    }
+
+    return { data: [], error: null };
+  } catch (err: any) {
+    console.warn('Could not fetch orders from Supabase:', err.message);
+    return { data: null, error: err };
+  }
+}
+
+/**
+ * Create a new order in Supabase
+ */
+export async function createSupabaseOrder(order: CustomerOrder, userId?: string) {
+  if (!isSupabaseConfigured) {
+    return { error: null };
+  }
+
+  try {
+    const payload = {
+      id: order.id,
+      user_id: userId || null,
+      customer_name: order.customerName,
+      customer_email: order.customerEmail,
+      customer_phone: order.customerPhone,
+      shipping_address: order.shippingAddress,
+      city: order.city,
+      pincode: order.pincode,
+      items: order.items,
+      subtotal: order.subtotal,
+      shipping_fee: order.shippingFee,
+      total: order.total,
+      payment_method: order.paymentMethod,
+      status: order.status,
+      notes: order.notes || null,
+    };
+
+    const { error } = await supabase.from('orders').insert([payload]);
+    if (error) throw error;
+    return { error: null };
+  } catch (err: any) {
+    console.warn('Failed to insert order into Supabase:', err.message);
+    return { error: err };
+  }
+}
+
+/**
+ * Update an order's status in Supabase
+ */
+export async function updateSupabaseOrderStatus(orderId: string, status: OrderStatus) {
+  if (!isSupabaseConfigured) return { error: null };
+  return await supabase
+    .from('orders')
+    .update({ status })
+    .eq('id', orderId);
+}
+
+/**
+ * Seed sample products into Supabase 'products' table
+ */
+export async function seedProductsToSupabase(products: Product[]) {
+  if (!isSupabaseConfigured) {
+    throw new Error('Supabase credentials are not configured in .env yet.');
+  }
+
+  const rows = products.map((p) => ({
+    id: p.id,
+    name: p.name,
+    category: p.category,
+    subtitle: p.subtitle,
+    weight: p.weight,
+    price: p.price,
+    rating: p.rating,
+    review_count: p.reviewCount,
+    tag: p.tag,
+    tag_type: p.tagType,
+    description: p.description,
+    long_description: p.longDescription,
+    image_url: p.imageUrl,
+    alt_text: p.altText,
+    ingredients: p.ingredients,
+    pairing_suggestions: p.pairingSuggestions,
+    shelf_life: p.shelfLife,
+    heat_level: p.heatLevel,
+    dietary: p.dietary,
+    stock_status: 'In Stock',
+  }));
+
+  const { error } = await supabase.from('products').upsert(rows, { onConflict: 'id' });
+  if (error) throw error;
+  return { success: true };
+}
+
+/**
+ * Seed sample initial orders into Supabase 'orders' table
+ */
+export async function seedSampleOrdersToSupabase(orders: CustomerOrder[]) {
+  if (!isSupabaseConfigured) {
+    throw new Error('Supabase credentials are not configured in .env yet.');
+  }
+
+  const rows = orders.map((o) => ({
+    id: o.id,
+    customer_name: o.customerName,
+    customer_email: o.customerEmail,
+    customer_phone: o.customerPhone,
+    shipping_address: o.shippingAddress,
+    city: o.city,
+    pincode: o.pincode,
+    items: o.items,
+    subtotal: o.subtotal,
+    shipping_fee: o.shippingFee,
+    total: o.total,
+    payment_method: o.paymentMethod,
+    status: o.status,
+    notes: o.notes || null,
+  }));
+
+  const { error } = await supabase.from('orders').upsert(rows, { onConflict: 'id' });
+  if (error) throw error;
+  return { success: true };
+}
+
+/**
+ * Maps a Supabase User object into our application's UserProfile
+ */
+export const mapSupabaseUserToProfile = (user: User): UserProfile => {
+  const isOwner = isUserOwner(user);
+  const fullName =
+    user.user_metadata?.full_name ||
+    user.user_metadata?.name ||
+    (isOwner ? 'Chef Ramesh Joshi' : user.email?.split('@')[0] || 'Pantry Patron');
+
+  const initials = fullName
+    .split(' ')
+    .filter(Boolean)
+    .map((n: string) => n[0].toUpperCase())
+    .slice(0, 2)
+    .join('') || (isOwner ? 'RJ' : 'LP');
+
+  return {
+    id: user.id,
+    name: fullName,
+    email: user.email || '',
+    role: isOwner ? 'owner' : 'customer',
+    avatarInitials: initials,
+    phone: user.user_metadata?.phone || '+91 98200 12345',
+    address: user.user_metadata?.address || 'Civil Lines, Near Lake',
+    city: user.user_metadata?.city || 'Banswara',
+  };
+};
+
+/**
+ * Real Supabase Auth: Sign Up with email, password, and metadata
+ */
+export async function signUpUser({
+  email,
+  password,
+  fullName,
+  role = 'customer',
+}: {
+  email: string;
+  password: string;
+  fullName: string;
+  role?: 'customer' | 'owner';
+}) {
+  if (!isSupabaseConfigured) {
+    return {
+      data: null,
+      error: new Error('Supabase is not configured yet. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.'),
+    };
+  }
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        full_name: fullName,
+        role: role,
+      },
+    },
+  });
+
+  return { data, error };
+}
+
+/**
+ * Real Supabase Auth: Sign In with email and password
+ */
+export async function signInUser({
+  email,
+  password,
+}: {
+  email: string;
+  password: string;
+}) {
+  if (!isSupabaseConfigured) {
+    return {
+      data: null,
+      error: new Error('Supabase is not configured yet. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.'),
+    };
+  }
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  return { data, error };
+}
+
+/**
+ * Real Supabase Auth: Sign Out
+ */
+export async function signOutUser() {
+  if (!isSupabaseConfigured) return { error: null };
+  return await supabase.auth.signOut();
+}
+
+/**
+ * Realtime listener for orders table changes
+ */
+export function subscribeToOrders(onUpdate: () => void) {
+  if (!isSupabaseConfigured) return () => {};
+
+  const channel = supabase
+    .channel('orders-realtime-channel')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'orders' },
+      () => {
+        onUpdate();
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
+

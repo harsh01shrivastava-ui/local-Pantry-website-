@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CartItem } from '../types';
+import { CustomerOrder } from '../types/auth';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -9,6 +10,7 @@ interface CartDrawerProps {
   onRemoveItem: (productId: string, jarSize: string) => void;
   onClearCart: () => void;
   onExplore: () => void;
+  onOrderCreated?: (order: CustomerOrder) => void;
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({
@@ -19,6 +21,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onRemoveItem,
   onClearCart,
   onExplore,
+  onOrderCreated,
 }) => {
   const [promoCode, setPromoCode] = useState('');
   const [appliedDiscount, setAppliedDiscount] = useState<number>(0);
@@ -91,6 +94,33 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       id: orderId,
       total: grandTotal,
     });
+
+    if (onOrderCreated) {
+      onOrderCreated({
+        id: orderId,
+        customerName: customerInfo.name,
+        customerEmail: customerInfo.email,
+        customerPhone: customerInfo.phone,
+        shippingAddress: customerInfo.address,
+        city: customerInfo.city,
+        pincode: customerInfo.pincode,
+        date: 'Just now',
+        items: items.map((i) => ({
+          productId: i.product.id,
+          productName: i.product.name,
+          quantity: i.quantity,
+          jarSize: i.jarSize,
+          unitPrice: i.jarSize === 'Standard' ? i.product.price : Math.round(i.product.price * 1.75),
+        })),
+        subtotal,
+        shippingFee,
+        total: grandTotal,
+        paymentMethod: customerInfo.paymentMethod,
+        status: 'Pending',
+        notes: isGift && giftNote ? `Gift note: ${giftNote}` : undefined,
+      });
+    }
+
     onClearCart();
   };
 

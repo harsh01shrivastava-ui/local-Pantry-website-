@@ -18,8 +18,8 @@ export const Footer: React.FC<FooterProps> = ({ onNavClick }) => {
   };
 
   return (
-    <footer className="w-full bg-[#fbf2ee] mt-12 border-t border-[#dec0b7]/40 shadow-[0_-1px_12px_rgba(42,38,36,0.03)]">
-      <div className="max-w-[1280px] mx-auto px-4 lg:px-8 py-14 lg:py-16">
+    <footer className="w-full bg-[#fbf2ee] mt-8 sm:mt-12 border-t border-[#dec0b7]/40 shadow-[0_-1px_12px_rgba(42,38,36,0.03)]">
+      <div className="max-w-[1280px] mx-auto px-4 lg:px-8 py-10 sm:py-14 lg:py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-12">
           {/* Brand Info */}
           <div className="lg:col-span-4 flex flex-col items-start">

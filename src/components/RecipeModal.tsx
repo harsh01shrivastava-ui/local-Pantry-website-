@@ -38,22 +38,22 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-fadeIn">
       <div
-        className="relative bg-white rounded-2xl max-w-3xl w-full shadow-2xl overflow-hidden border border-[#efe6e3] my-8"
+        className="relative bg-white rounded-2xl max-w-3xl w-full shadow-2xl overflow-hidden border border-[#efe6e3] my-6"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
         <button
           onClick={onClose}
           aria-label="Close modal"
-          className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm text-[#57423b] hover:text-[#1e1b19] flex items-center justify-center shadow-md transition-colors"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm text-[#57423b] hover:text-[#1e1b19] flex items-center justify-center shadow-md transition-colors"
         >
           <span className="material-symbols-outlined text-[20px]">close</span>
         </button>
 
         {/* Hero Header with Recipe Image */}
-        <div className="relative h-64 sm:h-72 w-full bg-[#f5ece9] overflow-hidden">
+        <div className="relative h-52 sm:h-72 w-full bg-[#f5ece9] overflow-hidden">
           <img
             src={recipe.imageUrl}
             alt={recipe.altText}
