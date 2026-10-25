@@ -7,12 +7,13 @@ interface HeaderProps {
   setActiveTab: (tab: string) => void;
   cartCount: number;
   wishlistCount: number;
-  currentUser?: UserProfile;
+  currentUser?: UserProfile | null;
   isLoggedIn?: boolean;
   onOpenCart: () => void;
   onOpenWishlist: () => void;
   onOpenSearch: () => void;
   onOpenAccount: () => void;
+  onLogout?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -21,14 +22,15 @@ export const Header: React.FC<HeaderProps> = ({
   cartCount,
   wishlistCount,
   currentUser,
-  isLoggedIn = true,
+  isLoggedIn = false,
   onOpenCart,
   onOpenWishlist,
   onOpenSearch,
   onOpenAccount,
+  onLogout,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const isOwner = isLoggedIn && currentUser?.role === 'owner';
+  const isOwner = Boolean(isLoggedIn && currentUser && currentUser.role === 'owner');
 
   // Prevent background scrolling when mobile menu drawer is open
   useEffect(() => {
@@ -199,10 +201,23 @@ export const Header: React.FC<HeaderProps> = ({
                 ? 'bg-[#516444] text-white hover:bg-[#435338] ring-2 ring-[#516444]/30'
                 : 'bg-[#9f3c16] text-white hover:bg-[#bf542c]'
             }`}
-            title={isOwner ? 'Store Owner Account (Click to manage/switch)' : 'Customer Account'}
+            title={isOwner ? 'Store Owner Account (Click to manage)' : 'Customer Account'}
           >
             {currentUser?.avatarInitials || <span className="material-symbols-outlined text-[18px]">person</span>}
           </button>
+
+          {/* Direct Sign Out Button in Header (visible on larger screens) */}
+          {isLoggedIn && onLogout && (
+            <button
+              onClick={onLogout}
+              aria-label="Sign out of account"
+              className="hidden md:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[12px] font-semibold text-[#57423b] hover:text-[#ba1a1a] hover:bg-[#efe6e3] transition-colors cursor-pointer border border-[#dec0b7]/40 shadow-2xs"
+              title="Sign out of session"
+            >
+              <span className="material-symbols-outlined text-[15px]">logout</span>
+              <span>Sign Out</span>
+            </button>
+          )}
 
           {/* Mobile Hamburger Button */}
           <button
@@ -355,7 +370,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <span className="material-symbols-outlined text-[18px] text-[#9f3c16]">
                       {isOwner ? 'admin_panel_settings' : 'person'}
                     </span>
-                    <span>{isOwner ? 'Owner Account & Role Switcher' : 'My Account & Past Orders'}</span>
+                    <span>{isOwner ? 'Store Owner Dashboard & Account' : isLoggedIn ? 'My Account Profile' : 'Sign In / Register'}</span>
                   </span>
                   <span className="material-symbols-outlined text-[16px] text-[#8a726a]">chevron_right</span>
                 </button>
@@ -390,6 +405,20 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="material-symbols-outlined text-[20px]">shopping_bag</span>
                 <span>Open Cart ({cartCount} {cartCount === 1 ? 'item' : 'items'})</span>
               </button>
+
+              {/* Mobile Drawer Logout Button */}
+              {isLoggedIn && onLogout && (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onLogout();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-white border border-red-200 text-[#ba1a1a] hover:bg-red-50 text-[13px] font-semibold transition-colors cursor-pointer shadow-2xs"
+                >
+                  <span className="material-symbols-outlined text-[17px]">logout</span>
+                  <span>Sign Out ({currentUser?.name?.split(' ')[0] || 'Account'})</span>
+                </button>
+              )}
 
               <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#516444] font-medium text-center">
                 <span className="material-symbols-outlined text-[15px]">verified</span>

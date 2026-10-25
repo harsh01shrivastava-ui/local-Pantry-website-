@@ -3,6 +3,7 @@ import { Product, CategoryId } from '../types';
 
 interface ProductCatalogProps {
   products: Product[];
+  isLoading?: boolean;
   onSelectProduct: (product: Product) => void;
   onAddToCart: (product: Product) => void;
   onToggleWishlist: (productId: string) => void;
@@ -11,6 +12,7 @@ interface ProductCatalogProps {
 
 export const ProductCatalog: React.FC<ProductCatalogProps> = ({
   products,
+  isLoading = false,
   onSelectProduct,
   onAddToCart,
   onToggleWishlist,
@@ -23,7 +25,20 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
   const filteredProducts = products
     .filter((product) => {
       if (selectedCategory === 'all') return true;
-      return product.category === selectedCategory;
+      const cat = (product.category || '').toLowerCase();
+      if (selectedCategory === 'chili') {
+        return cat.includes('chili') || cat.includes('oil') || cat === 'chili';
+      }
+      if (selectedCategory === 'pesto') {
+        return cat.includes('pesto') || cat.includes('dip') || cat.includes('spread') || cat === 'pesto';
+      }
+      if (selectedCategory === 'sauces') {
+        return cat.includes('sauce') || cat.includes('marinade') || cat === 'sauces';
+      }
+      if (selectedCategory === 'heritage') {
+        return cat.includes('heritage') || cat.includes('spice') || cat.includes('sweet') || cat.includes('podi') || cat === 'heritage';
+      }
+      return cat === selectedCategory;
     })
     .sort((a, b) => {
       if (sortBy === 'price-asc') return a.price - b.price;
@@ -155,17 +170,56 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
         </div>
 
         {/* Product Cards Grid: Stacked 1-col on mobile, 2-col on tablet, 3-col on desktop */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-8" id="products-grid">
-          {filteredProducts.map((product) => {
-            const isWishlisted = wishlistIds.has(product.id);
-            const isJustAdded = addedProductId === product.id;
-
-            return (
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <div
-                key={product.id}
-                onClick={() => onSelectProduct(product)}
-                className="group flex flex-col bg-white rounded-2xl overflow-hidden shadow-[0_2px_10px_rgba(42,38,36,0.04)] border border-[#efe6e3] hover:shadow-xl transition-all duration-300 cursor-pointer"
+                key={i}
+                className="bg-white rounded-2xl overflow-hidden border border-[#efe6e3] animate-pulse"
               >
+                <div className="aspect-[16/10] sm:aspect-[4/3] bg-[#f5ece9]" />
+                <div className="p-5 sm:p-6 space-y-3">
+                  <div className="h-5 bg-[#f5ece9] rounded-md w-3/4" />
+                  <div className="h-4 bg-[#f5ece9] rounded-md w-1/2" />
+                  <div className="h-12 bg-[#f5ece9] rounded-md w-full" />
+                  <div className="pt-4 border-t border-[#f5ece9] flex justify-between items-center">
+                    <div className="h-6 bg-[#f5ece9] rounded-md w-16" />
+                    <div className="h-10 bg-[#f5ece9] rounded-xl w-28" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="bg-white rounded-2xl p-8 sm:p-12 text-center border border-[#efe6e3] max-w-lg mx-auto shadow-sm">
+            <span className="material-symbols-outlined text-[42px] text-[#9f3c16]/40 mb-3">
+              inventory_2
+            </span>
+            <h3 className="font-serif text-[22px] text-[#1e1b19] font-normal mb-2">
+              No creations found
+            </h3>
+            <p className="text-[14px] text-[#57423b] mb-5">
+              We couldn't find any provisions in this category right now. Fresh small batches are hand-stirred weekly in our Banswara kitchen!
+            </p>
+            <button
+              onClick={() => setSelectedCategory('all')}
+              className="px-5 py-2.5 rounded-xl bg-[#9f3c16] text-white font-semibold text-[13px] hover:bg-[#bf542c] transition-colors cursor-pointer"
+            >
+              View All Favorites
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-8" id="products-grid">
+            {filteredProducts.map((product) => {
+              const isWishlisted = wishlistIds.has(product.id);
+              const isJustAdded = addedProductId === product.id;
+
+              return (
+                <div
+                  key={product.id}
+                  onClick={() => onSelectProduct(product)}
+                  className="group flex flex-col bg-white rounded-2xl overflow-hidden shadow-[0_2px_10px_rgba(42,38,36,0.04)] border border-[#efe6e3] hover:shadow-xl transition-all duration-300 cursor-pointer"
+                >
                 {/* Image Container with Badges */}
                 <div className="relative overflow-hidden aspect-[16/10] sm:aspect-[4/3] bg-[#f5ece9] flex items-center justify-center">
                   {product.imageUrl ? (
@@ -297,7 +351,8 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
             );
           })}
         </div>
-      </div>
-    </section>
+      )}
+    </div>
+  </section>
   );
 };

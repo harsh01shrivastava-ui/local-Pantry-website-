@@ -56,15 +56,13 @@ export const OWNER_EMAIL = (
   import.meta.env.VITE_OWNER_EMAIL || 'owner@thelocalpantry.in'
 ).toLowerCase().trim();
 
-/**
- * Checks if an authenticated Supabase user has Store Owner permissions.
- * Authorizes if email matches configured OWNER_EMAIL or user_metadata.role === 'owner'.
- */
 export const isUserOwner = (user: User | null): boolean => {
-  if (!user) return false;
-  const userEmail = (user.email || '').toLowerCase().trim();
-  const metadataRole = user.user_metadata?.role;
-  return userEmail === OWNER_EMAIL || metadataRole === 'owner';
+  if (!user || !user.email) return false;
+  const userEmail = user.email.toLowerCase().trim();
+  const ownerEmail = OWNER_EMAIL.toLowerCase().trim();
+  const isEmailMatch = Boolean(ownerEmail) && userEmail === ownerEmail;
+  const isAppRoleOwner = user.app_metadata?.role === 'owner';
+  return isEmailMatch || isAppRoleOwner;
 };
 
 // ==========================================
@@ -200,9 +198,12 @@ export async function createSupabaseOrder(order: CustomerOrder, userId?: string)
   }
 
   try {
+    // Validate that userId is a valid UUID before passing to postgres uuid column
+    const isUUID = userId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+
     const payload = {
       id: order.id,
-      user_id: userId || null,
+      user_id: isUUID ? userId : null,
       customer_name: order.customerName,
       customer_email: order.customerEmail,
       customer_phone: order.customerPhone,
@@ -354,13 +355,16 @@ export async function signUpUser({
     };
   }
 
+  // Enforce server-side security: users cannot self-assign owner role unless email matches OWNER_EMAIL
+  const sanitizedRole = email.toLowerCase().trim() === OWNER_EMAIL.toLowerCase().trim() ? 'owner' : 'customer';
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: {
         full_name: fullName,
-        role: role,
+        role: sanitizedRole,
       },
     },
   });

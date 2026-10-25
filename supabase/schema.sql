@@ -76,38 +76,62 @@ ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 
 -- Product Policies:
--- Allow anyone (public, anonymous, authenticated) to view products
+-- 1. Allow anyone (guest, customer, public) to view published products
 DROP POLICY IF EXISTS "Public can view products" ON public.products;
 CREATE POLICY "Public can view products"
     ON public.products FOR SELECT
     USING (true);
 
--- Allow authenticated users / owners / service role to insert or update products
+-- 2. Allow only authorized Store Owner to modify, update price, or manage products
+DROP POLICY IF EXISTS "Store owner can manage products" ON public.products;
 DROP POLICY IF EXISTS "Allow updates to products" ON public.products;
-CREATE POLICY "Allow updates to products"
+CREATE POLICY "Store owner can manage products"
     ON public.products FOR ALL
-    USING (true)
-    WITH CHECK (true);
+    USING (
+        (auth.jwt() ->> 'email' = 'harsh01.shrivastava@gmail.com') OR
+        ((auth.jwt() -> 'app_metadata' ->> 'role') = 'owner') OR
+        ((auth.jwt() -> 'user_metadata' ->> 'role') = 'owner' AND auth.jwt() ->> 'email' = 'harsh01.shrivastava@gmail.com')
+    )
+    WITH CHECK (
+        (auth.jwt() ->> 'email' = 'harsh01.shrivastava@gmail.com') OR
+        ((auth.jwt() -> 'app_metadata' ->> 'role') = 'owner') OR
+        ((auth.jwt() -> 'user_metadata' ->> 'role') = 'owner' AND auth.jwt() ->> 'email' = 'harsh01.shrivastava@gmail.com')
+    );
 
 -- Order Policies:
--- Allow anyone (guest or customer) to place an order
+-- 1. Allow anyone (guest or customer) to place a new order at checkout
 DROP POLICY IF EXISTS "Allow anyone to insert orders" ON public.orders;
 CREATE POLICY "Allow anyone to insert orders"
     ON public.orders FOR INSERT
     WITH CHECK (true);
 
--- Allow anyone to select orders (or filter by authenticated user in production)
+-- 2. Allow Store Owner to view all kitchen orders; Patrons can view their own orders
+DROP POLICY IF EXISTS "Store owner can view all orders" ON public.orders;
 DROP POLICY IF EXISTS "Allow viewing orders" ON public.orders;
-CREATE POLICY "Allow viewing orders"
+CREATE POLICY "Store owner can view all orders"
     ON public.orders FOR SELECT
-    USING (true);
+    USING (
+        (auth.jwt() ->> 'email' = 'harsh01.shrivastava@gmail.com') OR
+        ((auth.jwt() -> 'app_metadata' ->> 'role') = 'owner') OR
+        (auth.uid() IS NOT NULL AND auth.uid() = user_id) OR
+        (auth.jwt() ->> 'email' IS NOT NULL AND customer_email = auth.jwt() ->> 'email')
+    );
 
--- Allow updating order status (e.g. from the Owner Dashboard)
+-- 3. Allow Store Owner to update order status (e.g. from the Owner Dashboard)
+DROP POLICY IF EXISTS "Store owner can update order status" ON public.orders;
 DROP POLICY IF EXISTS "Allow updating order status" ON public.orders;
-CREATE POLICY "Allow updating order status"
+CREATE POLICY "Store owner can update order status"
     ON public.orders FOR UPDATE
-    USING (true)
-    WITH CHECK (true);
+    USING (
+        (auth.jwt() ->> 'email' = 'harsh01.shrivastava@gmail.com') OR
+        ((auth.jwt() -> 'app_metadata' ->> 'role') = 'owner') OR
+        ((auth.jwt() -> 'user_metadata' ->> 'role') = 'owner' AND auth.jwt() ->> 'email' = 'harsh01.shrivastava@gmail.com')
+    )
+    WITH CHECK (
+        (auth.jwt() ->> 'email' = 'harsh01.shrivastava@gmail.com') OR
+        ((auth.jwt() -> 'app_metadata' ->> 'role') = 'owner') OR
+        ((auth.jwt() -> 'user_metadata' ->> 'role') = 'owner' AND auth.jwt() ->> 'email' = 'harsh01.shrivastava@gmail.com')
+    );
 
 -- Enable Supabase Realtime replication on orders (so owner dashboard updates instantly)
 ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;

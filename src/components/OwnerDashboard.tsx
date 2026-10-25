@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CustomerOrder, OrderStatus, UserProfile } from '../types/auth';
 import { Product } from '../types';
 import { isSupabaseConfigured } from '../lib/supabase';
@@ -10,9 +10,8 @@ interface OwnerDashboardProps {
   onUpdateOrderStatus: (orderId: string, newStatus: OrderStatus) => void;
   onUpdateProductPrice?: (productId: string, newPrice: number) => void;
   onUpdateProductStock?: (productId: string, status: 'In Stock' | 'Low Stock' | 'Out of Stock') => void;
-  onSeedDatabase?: () => Promise<{ success: boolean; message: string }>;
+  onRefreshData?: () => Promise<{ success: boolean; message: string }>;
   onNavigateToShop: () => void;
-  onSwitchRole: (role: 'customer' | 'owner') => void;
 }
 
 export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
@@ -22,29 +21,29 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
   onUpdateOrderStatus,
   onUpdateProductPrice,
   onUpdateProductStock,
-  onSeedDatabase,
+  onRefreshData,
   onNavigateToShop,
-  onSwitchRole,
 }) => {
   const [activeTab, setActiveTab] = useState<'orders' | 'inventory' | 'dispatch'>('orders');
   const [orderStatusFilter, setOrderStatusFilter] = useState<'All' | OrderStatus>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [tempPrice, setTempPrice] = useState<number>(0);
-  const [seedLoading, setSeedLoading] = useState(false);
-  const [seedNotice, setSeedNotice] = useState<string | null>(null);
+  const [refreshLoading, setRefreshLoading] = useState(false);
+  const [refreshNotice, setRefreshNotice] = useState<string | null>(null);
 
-  const [productStockMap, setProductStockMap] = useState<Record<string, 'In Stock' | 'Low Stock' | 'Out of Stock'>>({
-    'sichuan-chilli-oil': 'In Stock',
-    'smokey-tandoori': 'In Stock',
-    'pesto': 'In Stock',
-    'chunky-pizza-sauce': 'In Stock',
-    'mint-dip': 'Low Stock',
-    'podi': 'In Stock',
-    'kesari-shrikhand': 'In Stock',
-    'hummus': 'In Stock',
-    'apple-tam-jam': 'In Stock',
-  });
+  // Dynamically initialize stock map from live Supabase products
+  const [productStockMap, setProductStockMap] = useState<Record<string, 'In Stock' | 'Low Stock' | 'Out of Stock'>>({});
+
+  useEffect(() => {
+    if (products.length > 0) {
+      const initialStock: Record<string, 'In Stock' | 'Low Stock' | 'Out of Stock'> = {};
+      products.forEach((p) => {
+        initialStock[p.id] = ((p as any).stock_status as any) || 'In Stock';
+      });
+      setProductStockMap(initialStock);
+    }
+  }, [products]);
 
   // Calculate Quick Stats
   const totalOrders = orders.length;
@@ -83,18 +82,18 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
     setEditingPriceId(null);
   };
 
-  const handleTriggerSeed = async () => {
-    if (!onSeedDatabase) return;
-    setSeedLoading(true);
-    setSeedNotice(null);
+  const handleTriggerRefresh = async () => {
+    if (!onRefreshData) return;
+    setRefreshLoading(true);
+    setRefreshNotice(null);
     try {
-      const res = await onSeedDatabase();
-      setSeedNotice(res.message);
-      setTimeout(() => setSeedNotice(null), 5000);
+      const res = await onRefreshData();
+      setRefreshNotice(res.message);
+      setTimeout(() => setRefreshNotice(null), 4000);
     } catch (err: any) {
-      setSeedNotice(`Seed failed: ${err.message}`);
+      setRefreshNotice(`Sync error: ${err.message}`);
     } finally {
-      setSeedLoading(false);
+      setRefreshLoading(false);
     }
   };
 
@@ -146,45 +145,34 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
 
             {/* Quick Action Navigation */}
             <div className="flex flex-wrap items-center gap-2.5">
-              {onSeedDatabase && (
+              {onRefreshData && (
                 <button
-                  onClick={handleTriggerSeed}
-                  disabled={seedLoading}
+                  onClick={handleTriggerRefresh}
+                  disabled={refreshLoading}
                   className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#516444] hover:bg-[#435338] text-white text-[13px] font-semibold transition-all cursor-pointer shadow-sm active:scale-95 disabled:opacity-60"
-                  title="Populate products and orders tables in Supabase"
+                  title="Synchronize fresh orders and product stock from Supabase database"
                 >
-                  {seedLoading ? (
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <span className="material-symbols-outlined text-[18px]">cloud_sync</span>
-                  )}
-                  <span>{seedLoading ? 'Seeding DB...' : 'Seed Database'}</span>
+                  <span className={`material-symbols-outlined text-[18px] ${refreshLoading ? 'animate-spin' : ''}`}>
+                    sync
+                  </span>
+                  <span>{refreshLoading ? 'Syncing...' : 'Sync Supabase'}</span>
                 </button>
               )}
 
               <button
                 onClick={onNavigateToShop}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#f5ece9] hover:bg-[#efe6e3] text-[#1e1b19] text-[13px] font-semibold transition-all cursor-pointer shadow-xs active:scale-95"
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#9f3c16] hover:bg-[#bf542c] text-white text-[13px] font-semibold transition-all cursor-pointer shadow-sm active:scale-95"
               >
                 <span className="material-symbols-outlined text-[18px]">storefront</span>
                 <span>View Storefront</span>
               </button>
-
-              <button
-                onClick={() => onSwitchRole('customer')}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#9f3c16] hover:bg-[#bf542c] text-white text-[13px] font-semibold transition-all cursor-pointer shadow-sm active:scale-95"
-                title="Switch to customer mode to browse and place test orders"
-              >
-                <span className="material-symbols-outlined text-[18px]">swap_horiz</span>
-                <span>Switch to Customer</span>
-              </button>
             </div>
           </div>
 
-          {seedNotice && (
+          {refreshNotice && (
             <div className="mt-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[12px] flex items-center gap-2 animate-fadeIn">
               <span className="material-symbols-outlined text-[18px]">check_circle</span>
-              <span>{seedNotice}</span>
+              <span>{refreshNotice}</span>
             </div>
           )}
         </div>

@@ -24,15 +24,15 @@ import { StockistsPage } from './components/StockistsPage';
 import { ContactPage } from './components/ContactPage';
 import { AccountModal } from './components/AccountModal';
 import { OwnerDashboard } from './components/OwnerDashboard';
+import { AuthGate } from './components/AuthGate';
+import logoImg from './assets/images/logo.png';
 
 import {
-  PANTRY_PRODUCTS,
   PANTRY_RECIPES,
   PANTRY_REVIEWS,
 } from './data/pantryData';
 import { Product, Recipe, CartItem } from './types';
 import { CustomerOrder, OrderStatus, UserProfile, UserRole } from './types/auth';
-import { INITIAL_ORDERS, MOCK_CUSTOMER, MOCK_OWNER } from './data/mockOrders';
 import {
   isSupabaseConfigured,
   supabase,
@@ -42,8 +42,6 @@ import {
   updateSupabaseOrderStatus,
   updateSupabaseProductPrice,
   updateSupabaseProductStock,
-  seedProductsToSupabase,
-  seedSampleOrdersToSupabase,
   mapSupabaseUserToProfile,
   signOutUser,
   subscribeToOrders,
@@ -52,37 +50,18 @@ import {
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>('shop');
 
-  // Auth & Role state with persistent local storage
-  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
-    const savedRole = localStorage.getItem('local_pantry_auth_role');
-    return savedRole === 'owner' ? MOCK_OWNER : MOCK_CUSTOMER;
-  });
+  // Strict Real Auth State: Defaults to unauthenticated guest until verified by Supabase session
+  const [isAuthChecking, setIsAuthChecking] = useState<boolean>(true);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
 
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
-    return localStorage.getItem('local_pantry_is_logged_in') !== 'false';
-  });
+  // Database-driven States: Initialized empty with loading indicators
+  const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<CustomerOrder[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(true);
 
-  // Orders State (supports incoming new orders from cart checkout!)
-  const [orders, setOrders] = useState<CustomerOrder[]>(INITIAL_ORDERS);
-
-  // Products State (supports owner price updates)
-  const [products, setProducts] = useState<Product[]>(PANTRY_PRODUCTS);
-
-  // Pre-seed cart with 2 items to match default preview
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    {
-      product: PANTRY_PRODUCTS[0], // Smokey Tandoori
-      quantity: 1,
-      jarSize: 'Standard',
-    },
-    {
-      product: PANTRY_PRODUCTS[1], // Mint Dip
-      quantity: 1,
-      jarSize: 'Standard',
-    },
-  ]);
-
-  // Wishlist state
+  // Cart and Wishlist state
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [wishlistIds, setWishlistIds] = useState<Set<string>>(new Set());
 
   // Modals & Drawers state
@@ -93,17 +72,31 @@ export default function App() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
 
+  const isOwner = Boolean(isLoggedIn && currentUser && currentUser.role === 'owner');
+
   // Supabase Auth session & Realtime listeners
   useEffect(() => {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured) {
+      setIsAuthChecking(false);
+      return;
+    }
 
-    // 1. Initial Session check
+    // 1. Check existing session on boot (Session Persistence)
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         const profile = mapSupabaseUserToProfile(session.user);
         setCurrentUser(profile);
         setIsLoggedIn(true);
+        if (profile.role === 'owner') {
+          setActiveTab('owner-dashboard');
+        }
+      } else {
+        setCurrentUser(null);
+        setIsLoggedIn(false);
       }
+      setIsAuthChecking(false);
+    }).catch(() => {
+      setIsAuthChecking(false);
     });
 
     // 2. Auth state change listener
@@ -114,9 +107,10 @@ export default function App() {
         const profile = mapSupabaseUserToProfile(session.user);
         setCurrentUser(profile);
         setIsLoggedIn(true);
-      } else if (_event === 'SIGNED_OUT') {
+      } else {
         setIsLoggedIn(false);
-        setCurrentUser(MOCK_CUSTOMER);
+        setCurrentUser(null);
+        setActiveTab('shop');
       }
     });
 
@@ -125,13 +119,14 @@ export default function App() {
     };
   }, []);
 
-  // Fetch initial products and orders from Supabase (or fallback to local data)
+  // Fetch initial products and orders strictly from Supabase
   useEffect(() => {
     let isMounted = true;
 
     async function loadData() {
       if (!isSupabaseConfigured) return;
 
+      setIsLoadingProducts(true);
       try {
         const [prodResult, orderResult] = await Promise.all([
           getSupabaseProducts(),
@@ -139,24 +134,28 @@ export default function App() {
         ]);
 
         if (isMounted) {
-          if (prodResult.data && prodResult.data.length > 0) {
+          if (prodResult.data) {
             setProducts(prodResult.data);
           }
-          if (orderResult.data && orderResult.data.length > 0) {
+          if (orderResult.data) {
             setOrders(orderResult.data);
           }
         }
       } catch (e) {
-        console.warn('Initial Supabase fetch fallback:', e);
+        console.warn('Initial Supabase fetch error:', e);
+      } finally {
+        if (isMounted) {
+          setIsLoadingProducts(false);
+        }
       }
     }
 
     loadData();
 
-    // Setup live subscription to orders so checkout & status updates arrive in real-time
+    // Setup live subscription to orders so new checkouts & status changes update instantly
     const unsubscribeOrders = subscribeToOrders(async () => {
       const orderResult = await getSupabaseOrders();
-      if (orderResult.data && orderResult.data.length > 0 && isMounted) {
+      if (orderResult.data && isMounted) {
         setOrders(orderResult.data);
       }
     });
@@ -168,32 +167,15 @@ export default function App() {
   }, []);
 
   // Auth Operations
-  const handleSwitchRole = (role: UserRole) => {
-    const newUser = role === 'owner' ? MOCK_OWNER : MOCK_CUSTOMER;
-    setCurrentUser(newUser);
-    setIsLoggedIn(true);
-    localStorage.setItem('local_pantry_auth_role', role);
-    localStorage.setItem('local_pantry_is_logged_in', 'true');
-    if (role === 'owner') {
-      setActiveTab('owner-dashboard');
-    } else if (activeTab === 'owner-dashboard') {
-      setActiveTab('shop');
-    }
-  };
-
   const handleLogin = (role: UserRole, profile?: UserProfile) => {
     if (profile) {
       setCurrentUser(profile);
       setIsLoggedIn(true);
-      localStorage.setItem('local_pantry_auth_role', profile.role);
-      localStorage.setItem('local_pantry_is_logged_in', 'true');
-      if (profile.role === 'owner') {
+      if (profile.role === 'owner' || role === 'owner') {
         setActiveTab('owner-dashboard');
-      } else if (activeTab === 'owner-dashboard') {
+      } else {
         setActiveTab('shop');
       }
-    } else {
-      handleSwitchRole(role);
     }
     setIsAccountOpen(false);
   };
@@ -203,14 +185,12 @@ export default function App() {
       await signOutUser();
     }
     setIsLoggedIn(false);
-    localStorage.setItem('local_pantry_is_logged_in', 'false');
-    if (activeTab === 'owner-dashboard') {
-      setActiveTab('shop');
-    }
+    setCurrentUser(null);
+    setActiveTab('shop');
     setIsAccountOpen(false);
   };
 
-  // Owner Dashboard Operations
+  // Owner Dashboard Operations (Direct Supabase mutations)
   const handleUpdateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
     setOrders((prev) =>
       prev.map((order) => (order.id === orderId ? { ...order, status: newStatus } : order))
@@ -241,36 +221,30 @@ export default function App() {
   const handleOrderCreated = async (newOrder: CustomerOrder) => {
     setOrders((prev) => [newOrder, ...prev]);
     if (isSupabaseConfigured) {
-      await createSupabaseOrder(newOrder, isLoggedIn ? currentUser.id : undefined);
+      const validUserId = isLoggedIn && currentUser ? currentUser.id : undefined;
+      await createSupabaseOrder(newOrder, validUserId);
     }
   };
 
-  const handleSeedDatabase = async (): Promise<{ success: boolean; message: string }> => {
-    if (!isSupabaseConfigured) {
-      return {
-        success: false,
-        message: 'Please set your valid VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env first.',
-      };
-    }
+  const handleRefreshData = async (): Promise<{ success: boolean; message: string }> => {
     try {
-      await seedProductsToSupabase(PANTRY_PRODUCTS);
-      await seedSampleOrdersToSupabase(INITIAL_ORDERS);
-      const prodRes = await getSupabaseProducts();
-      if (prodRes.data && prodRes.data.length > 0) setProducts(prodRes.data);
-      const orderRes = await getSupabaseOrders();
-      if (orderRes.data && orderRes.data.length > 0) setOrders(orderRes.data);
+      const [prodRes, orderRes] = await Promise.all([
+        getSupabaseProducts(),
+        getSupabaseOrders(),
+      ]);
+      if (prodRes.data) setProducts(prodRes.data);
+      if (orderRes.data) setOrders(orderRes.data);
       return {
         success: true,
-        message: `Successfully seeded ${PANTRY_PRODUCTS.length} products & sample orders to Supabase!`,
+        message: `Synced with Supabase: ${prodRes.data?.length || 0} products & ${orderRes.data?.length || 0} orders live.`,
       };
     } catch (err: any) {
       return {
         success: false,
-        message: `Seed error: ${err.message}`,
+        message: `Sync error: ${err.message}`,
       };
     }
   };
-
 
   // Cart operations
   const handleAddToCart = (
@@ -358,6 +332,28 @@ export default function App() {
     }, 50);
   };
 
+  // While session is restoring from Supabase, display warm brand loader
+  if (isAuthChecking) {
+    return (
+      <div className="min-h-screen bg-[#fff8f5] flex flex-col items-center justify-center p-6 text-center select-none font-sans">
+        <div className="relative mb-4">
+          <img
+            src={logoImg}
+            alt="The Local Pantry"
+            className="h-16 sm:h-20 w-auto object-contain rounded-2xl p-1 bg-white shadow-xs border border-[#dec0b7]/40 animate-pulse"
+          />
+        </div>
+        <h2 className="font-serif text-[26px] text-[#1e1b19] font-medium tracking-tight">The Local Pantry</h2>
+        <p className="text-[13px] text-[#57423b] mt-1">Connecting to kitchen pantry session...</p>
+      </div>
+    );
+  }
+
+  // Auth Gate / Login Wall: When visiting the website, if not logged in, show theme-matching Auth Gate
+  if (!isLoggedIn) {
+    return <AuthGate onLogin={handleLogin} />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-[#fff8f5] text-[#1e1b19] font-sans antialiased selection:bg-[#9f3c16] selection:text-white">
       {/* Top Fixed Header with Badges and Nav */}
@@ -372,6 +368,7 @@ export default function App() {
         onOpenWishlist={() => setIsWishlistOpen(true)}
         onOpenSearch={() => setIsSearchOpen(true)}
         onOpenAccount={() => setIsAccountOpen(true)}
+        onLogout={handleLogout}
       />
 
       {/* Main Content Area (padded for fixed header) */}
@@ -387,13 +384,14 @@ export default function App() {
             {/* Culinary Code / 4 USPs */}
             <CulinaryCode onLearnMore={() => setActiveTab('our-story')} />
 
-            {/* Product Catalog */}
+            {/* Product Catalog (exclusively powered by Supabase products) */}
             <ProductCatalog
               products={
                 activeTab === 'best-sellers'
                   ? products.filter((p) => p.rating >= 4.8)
                   : products
               }
+              isLoading={isLoadingProducts}
               onSelectProduct={(product) => setSelectedProduct(product)}
               onAddToCart={(product) => handleAddToCart(product, 1, 'Standard')}
               onToggleWishlist={handleToggleWishlist}
@@ -426,13 +424,14 @@ export default function App() {
               recipes={PANTRY_RECIPES}
               onSelectRecipe={(recipe) => setSelectedRecipe(recipe)}
             />
-            {/* Quick Product pairings row below recipes */}
+            {/* Dynamic Product pairings row below recipes */}
             <div className="max-w-[1280px] mx-auto px-4 lg:px-8 mt-12">
               <h3 className="font-serif text-[26px] text-[#1e1b19] font-medium mb-4">
                 Condiments Featured in These Recipes
               </h3>
               <ProductCatalog
                 products={products.slice(0, 4)}
+                isLoading={isLoadingProducts}
                 onSelectProduct={(product) => setSelectedProduct(product)}
                 onAddToCart={(product) => handleAddToCart(product, 1, 'Standard')}
                 onToggleWishlist={handleToggleWishlist}
@@ -443,8 +442,8 @@ export default function App() {
         ) : activeTab === 'contact' ? (
           <ContactPage onBackToShop={() => setActiveTab('shop')} />
         ) : activeTab === 'owner-dashboard' ? (
-          /* OWNER DASHBOARD ROUTE (Protected with Access Guard) */
-          isLoggedIn && currentUser.role === 'owner' ? (
+          /* OWNER DASHBOARD ROUTE (Protected with Strict Role Check) */
+          isOwner && currentUser ? (
             <OwnerDashboard
               currentUser={currentUser}
               orders={orders}
@@ -452,39 +451,46 @@ export default function App() {
               onUpdateOrderStatus={handleUpdateOrderStatus}
               onUpdateProductPrice={handleUpdateProductPrice}
               onUpdateProductStock={handleUpdateProductStock}
-              onSeedDatabase={handleSeedDatabase}
+              onRefreshData={handleRefreshData}
               onNavigateToShop={() => setActiveTab('shop')}
-              onSwitchRole={handleSwitchRole}
             />
           ) : (
-            /* Protected Access Guard Notice */
+            /* Protected Access Guard Notice - Zero Backdoor */
             <div className="max-w-[680px] mx-auto px-4 py-16 sm:py-24 text-center">
               <div className="bg-white p-7 sm:p-12 rounded-3xl border border-[#efe6e3] shadow-lg">
-                <div className="w-16 h-16 rounded-2xl bg-[#9f3c16]/10 text-[#9f3c16] flex items-center justify-center mx-auto mb-4 shadow-xs">
+                <div className="w-16 h-16 rounded-2xl bg-[#ba1a1a]/10 text-[#ba1a1a] flex items-center justify-center mx-auto mb-4 shadow-xs">
                   <span className="material-symbols-outlined text-[34px]">lock</span>
                 </div>
-                <span className="text-[11px] font-bold tracking-widest uppercase text-[#9f3c16] font-sans">
+                <span className="text-[11px] font-bold tracking-widest uppercase text-[#ba1a1a] font-sans">
                   Store Owner Restricted Area
                 </span>
                 <h2 className="font-serif text-[26px] sm:text-[32px] text-[#1e1b19] font-normal mt-1 mb-3">
-                  Owner Credentials Required
+                  {isLoggedIn ? 'Access Denied: Owner Privileges Required' : 'Store Owner Authentication Required'}
                 </h2>
                 <p className="text-[14px] sm:text-[15px] text-[#57423b] max-w-md mx-auto mb-6 leading-relaxed font-sans">
-                  You are currently logged in as a <strong>Customer</strong> ({currentUser.name}) or logged out. Please switch to the Store Owner account to manage incoming batch orders and inventory.
+                  {isLoggedIn && currentUser ? (
+                    <>
+                      You are currently logged in as a <strong>Customer</strong> ({currentUser.email}). Only verified Store Owner accounts matching the kitchen administration profile can access batch orders and inventory.
+                    </>
+                  ) : (
+                    <>
+                      You are currently visiting as a guest. Please sign in with your verified Store Owner credentials to manage kitchen dispatches, orders, and product inventory.
+                    </>
+                  )}
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                   <button
-                    onClick={() => handleSwitchRole('owner')}
+                    onClick={() => setIsAccountOpen(true)}
                     className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#9f3c16] hover:bg-[#bf542c] text-white font-semibold text-[14px] flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer active:scale-95"
                   >
-                    <span className="material-symbols-outlined text-[18px]">admin_panel_settings</span>
-                    <span>Switch to Store Owner Mode</span>
+                    <span className="material-symbols-outlined text-[18px]">login</span>
+                    <span>{isLoggedIn ? 'Sign In with Owner Account' : 'Sign In as Store Owner'}</span>
                   </button>
                   <button
                     onClick={() => setActiveTab('shop')}
                     className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#f5ece9] hover:bg-[#efe6e3] text-[#1e1b19] font-semibold text-[14px] transition-all cursor-pointer"
                   >
-                    Return to Shop
+                    Return to Storefront
                   </button>
                 </div>
               </div>
@@ -548,7 +554,7 @@ export default function App() {
         onSelectRecipe={(recipe) => setSelectedRecipe(recipe)}
       />
 
-      {/* User Account / Auth & Role Switcher Modal */}
+      {/* User Account / Supabase Auth Modal */}
       <AccountModal
         isOpen={isAccountOpen}
         onClose={() => setIsAccountOpen(false)}
@@ -556,7 +562,6 @@ export default function App() {
         isLoggedIn={isLoggedIn}
         onLogin={handleLogin}
         onLogout={handleLogout}
-        onSwitchRole={handleSwitchRole}
         onNavigateToShop={() => {
           setIsAccountOpen(false);
           setActiveTab('shop');
