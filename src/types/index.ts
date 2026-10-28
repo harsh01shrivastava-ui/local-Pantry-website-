@@ -21,6 +21,8 @@ export interface Product {
   heatLevel: 'None' | 'Mild' | 'Medium' | 'Hot';
   dietary: string[];
   isPreOrder?: boolean;
+  stock_status?: 'In Stock' | 'Low Stock' | 'Out of Stock';
+  stockStatus?: 'In Stock' | 'Low Stock' | 'Out of Stock';
 }
 
 export interface Recipe {

@@ -106,6 +106,8 @@ export async function getSupabaseProducts(): Promise<{ data: Product[] | null; e
         shelfLife: item.shelf_life || '4 weeks',
         heatLevel: item.heat_level || 'Mild',
         dietary: item.dietary || ['Vegetarian', 'Preservative-Free'],
+        stock_status: (item.stock_status as any) || 'In Stock',
+        stockStatus: (item.stock_status as any) || 'In Stock',
       }));
       return { data: mapped, error: null };
     }
@@ -124,7 +126,7 @@ export async function updateSupabaseProductPrice(productId: string, price: numbe
   if (!isSupabaseConfigured) return { error: null };
   return await supabase
     .from('products')
-    .update({ price })
+    .update({ price, updated_at: new Date().toISOString() })
     .eq('id', productId);
 }
 
@@ -135,7 +137,7 @@ export async function updateSupabaseProductStock(productId: string, stock_status
   if (!isSupabaseConfigured) return { error: null };
   return await supabase
     .from('products')
-    .update({ stock_status })
+    .update({ stock_status, updated_at: new Date().toISOString() })
     .eq('id', productId);
 }
 
@@ -275,7 +277,7 @@ export async function updateSupabaseOrderStatus(orderId: string, status: OrderSt
   if (!isSupabaseConfigured) return { error: null };
   return await supabase
     .from('orders')
-    .update({ status })
+    .update({ status, updated_at: new Date().toISOString() })
     .eq('id', orderId);
 }
 
@@ -471,6 +473,28 @@ export function subscribeToOrders(onUpdate: () => void) {
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'orders' },
+      () => {
+        onUpdate();
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
+
+/**
+ * Realtime listener for products table changes (stock, prices, edits)
+ */
+export function subscribeToProducts(onUpdate: () => void) {
+  if (!isSupabaseConfigured) return () => {};
+
+  const channel = supabase
+    .channel('products-realtime-channel')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'products' },
       () => {
         onUpdate();
       }

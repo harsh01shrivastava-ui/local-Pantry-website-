@@ -10,7 +10,6 @@ interface OwnerDashboardProps {
   onUpdateOrderStatus: (orderId: string, newStatus: OrderStatus) => void;
   onUpdateProductPrice?: (productId: string, newPrice: number) => void;
   onUpdateProductStock?: (productId: string, status: 'In Stock' | 'Low Stock' | 'Out of Stock') => void;
-  onRefreshData?: () => Promise<{ success: boolean; message: string }>;
   onNavigateToShop: () => void;
 }
 
@@ -21,7 +20,6 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
   onUpdateOrderStatus,
   onUpdateProductPrice,
   onUpdateProductStock,
-  onRefreshData,
   onNavigateToShop,
 }) => {
   const [activeTab, setActiveTab] = useState<'orders' | 'inventory' | 'dispatch'>('orders');
@@ -29,8 +27,6 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [tempPrice, setTempPrice] = useState<number>(0);
-  const [refreshLoading, setRefreshLoading] = useState(false);
-  const [refreshNotice, setRefreshNotice] = useState<string | null>(null);
 
   // Dynamically initialize stock map from live Supabase products
   const [productStockMap, setProductStockMap] = useState<Record<string, 'In Stock' | 'Low Stock' | 'Out of Stock'>>({});
@@ -39,7 +35,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
     if (products.length > 0) {
       const initialStock: Record<string, 'In Stock' | 'Low Stock' | 'Out of Stock'> = {};
       products.forEach((p) => {
-        initialStock[p.id] = ((p as any).stock_status as any) || 'In Stock';
+        initialStock[p.id] = (p.stock_status || (p as any).stockStatus || 'In Stock') as any;
       });
       setProductStockMap(initialStock);
     }
@@ -90,21 +86,6 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
     setEditingPriceId(null);
   };
 
-  const handleTriggerRefresh = async () => {
-    if (!onRefreshData) return;
-    setRefreshLoading(true);
-    setRefreshNotice(null);
-    try {
-      const res = await onRefreshData();
-      setRefreshNotice(res.message);
-      setTimeout(() => setRefreshNotice(null), 4000);
-    } catch (err: any) {
-      setRefreshNotice(`Sync error: ${err.message}`);
-    } finally {
-      setRefreshLoading(false);
-    }
-  };
-
   const getStatusBadge = (status: OrderStatus) => {
     switch (status) {
       case 'Pending':
@@ -132,14 +113,14 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                 </div>
 
                 <div
-                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
                     isSupabaseConfigured
                       ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                       : 'bg-amber-50 text-amber-800 border border-amber-200'
                   }`}
                 >
                   <span className={`w-2 h-2 rounded-full ${isSupabaseConfigured ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-                  <span>{isSupabaseConfigured ? 'Supabase Live Connected' : 'Supabase Demo/Local Mode'}</span>
+                  <span>{isSupabaseConfigured ? '100% Real-Time Live Sync Active' : 'Supabase Demo/Local Mode'}</span>
                 </div>
               </div>
 
@@ -147,26 +128,12 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                 Welcome {currentUser.name.startsWith('Chef') ? currentUser.name : `Chef ${currentUser.name}`}
               </h1>
               <p className="text-[14px] text-[#57423b] mt-1">
-                Live Kitchen Studio • Banswara, Rajasthan • Real-time Supabase Database Sync for Orders &amp; Inventory.
+                Live Kitchen Studio • Banswara, Rajasthan • Automatic Real-Time Live Sync for Orders &amp; Inventory.
               </p>
             </div>
 
             {/* Quick Action Navigation */}
             <div className="flex flex-wrap items-center gap-2.5">
-              {onRefreshData && (
-                <button
-                  onClick={handleTriggerRefresh}
-                  disabled={refreshLoading}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#516444] hover:bg-[#435338] text-white text-[13px] font-semibold transition-all cursor-pointer shadow-sm active:scale-95 disabled:opacity-60"
-                  title="Synchronize fresh orders and product stock from Supabase database"
-                >
-                  <span className={`material-symbols-outlined text-[18px] ${refreshLoading ? 'animate-spin' : ''}`}>
-                    sync
-                  </span>
-                  <span>{refreshLoading ? 'Syncing...' : 'Sync Supabase'}</span>
-                </button>
-              )}
-
               <button
                 onClick={onNavigateToShop}
                 className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#9f3c16] hover:bg-[#bf542c] text-white text-[13px] font-semibold transition-all cursor-pointer shadow-sm active:scale-95"
@@ -176,13 +143,6 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
               </button>
             </div>
           </div>
-
-          {refreshNotice && (
-            <div className="mt-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[12px] flex items-center gap-2 animate-fadeIn">
-              <span className="material-symbols-outlined text-[18px]">check_circle</span>
-              <span>{refreshNotice}</span>
-            </div>
-          )}
         </div>
 
 

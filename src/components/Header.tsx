@@ -183,8 +183,12 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Cart Trigger */}
           <button
             onClick={onOpenCart}
-            aria-label="View shopping bag"
-            className="relative text-[#57423b] hover:text-[#9f3c16] transition-colors flex items-center justify-center p-2 rounded-full hover:bg-[#efe6e3]/60 focus:outline-none cursor-pointer min-w-[38px] min-h-[38px]"
+            aria-label="View shopping bag & checkout"
+            className={`relative transition-colors flex items-center justify-center p-2 rounded-full focus:outline-none cursor-pointer min-w-[38px] min-h-[38px] ${
+              activeTab === 'checkout'
+                ? 'text-[#9f3c16] bg-[#f5ece9] ring-1 ring-[#9f3c16]/40'
+                : 'text-[#57423b] hover:text-[#9f3c16] hover:bg-[#efe6e3]/60'
+            }`}
           >
             <span className="material-symbols-outlined text-[21px] sm:text-[22px]">shopping_bag</span>
             <span className="absolute top-0.5 right-0.5 bg-[#9f3c16] text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
@@ -409,7 +413,7 @@ export const Header: React.FC<HeaderProps> = ({
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#9f3c16] hover:bg-[#bf542c] text-white text-[14px] font-semibold shadow-md transition-all active:scale-95"
               >
                 <span className="material-symbols-outlined text-[20px]">shopping_bag</span>
-                <span>Open Cart ({cartCount} {cartCount === 1 ? 'item' : 'items'})</span>
+                <span>Pantry Bag &amp; Checkout ({cartCount} {cartCount === 1 ? 'item' : 'items'})</span>
               </button>
 
               {/* Mobile Drawer Logout Button */}

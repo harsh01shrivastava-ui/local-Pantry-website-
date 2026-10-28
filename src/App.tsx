@@ -16,7 +16,7 @@ import { DispatchBanner } from './components/DispatchBanner';
 import { Footer } from './components/Footer';
 import { ProductModal } from './components/ProductModal';
 import { RecipeModal } from './components/RecipeModal';
-import { CartDrawer } from './components/CartDrawer';
+import { CheckoutPage } from './components/CheckoutPage';
 import { WishlistDrawer } from './components/WishlistDrawer';
 import { SearchModal } from './components/SearchModal';
 import { StoryPage } from './components/StoryPage';
@@ -45,10 +45,24 @@ import {
   mapSupabaseUserToProfile,
   signOutUser,
   subscribeToOrders,
+  subscribeToProducts,
 } from './lib/supabase';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<string>('shop');
+  const [activeTab, setActiveTabState] = useState<string>(() => {
+    try {
+      return sessionStorage.getItem('lp_active_tab') || 'shop';
+    } catch {
+      return 'shop';
+    }
+  });
+
+  const setActiveTab = (tab: string) => {
+    try {
+      sessionStorage.setItem('lp_active_tab', tab);
+    } catch {}
+    setActiveTabState(tab);
+  };
 
   // Strict Real Auth State: Defaults to unauthenticated guest until verified by Supabase session
   const [isAuthChecking, setIsAuthChecking] = useState<boolean>(true);
@@ -67,7 +81,6 @@ export default function App() {
   // Modals & Drawers state
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-  const [isCartOpen, setIsCartOpen] = useState(false);
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
@@ -76,50 +89,139 @@ export default function App() {
 
   // Supabase Auth session & Realtime listeners
   useEffect(() => {
+    let isMounted = true;
+
     if (!isSupabaseConfigured) {
+      try {
+        const saved = localStorage.getItem('local_pantry_user');
+        if (saved) {
+          const profile: UserProfile = JSON.parse(saved);
+          setCurrentUser(profile);
+          setIsLoggedIn(true);
+          if (profile.role === 'owner' && (activeTab === 'shop' || !sessionStorage.getItem('lp_active_tab'))) {
+            setActiveTab('owner-dashboard');
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to parse cached user:', e);
+      }
       setIsAuthChecking(false);
       return;
     }
 
-    // 1. Check existing session on boot (Session Persistence)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        const profile = mapSupabaseUserToProfile(session.user);
-        setCurrentUser(profile);
-        setIsLoggedIn(true);
-        if (profile.role === 'owner') {
-          setActiveTab('owner-dashboard');
-        }
-      } else {
-        setCurrentUser(null);
-        setIsLoggedIn(false);
-      }
-      setIsAuthChecking(false);
-    }).catch(() => {
-      setIsAuthChecking(false);
-    });
+    // 1. Fetch initial session via getSession() on app load & store in state
+    async function initSession() {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
 
-    // 2. Auth state change listener
+        if (isMounted) {
+          if (session?.user) {
+            const profile = mapSupabaseUserToProfile(session.user);
+            setCurrentUser(profile);
+            setIsLoggedIn(true);
+            try {
+              localStorage.setItem('local_pantry_user', JSON.stringify(profile));
+            } catch {}
+            if (profile.role === 'owner' && (activeTab === 'shop' || !sessionStorage.getItem('lp_active_tab'))) {
+              setActiveTab('owner-dashboard');
+            }
+          } else {
+            // Check fallback cached user if any
+            const saved = localStorage.getItem('local_pantry_user');
+            if (saved) {
+              try {
+                const profile: UserProfile = JSON.parse(saved);
+                setCurrentUser(profile);
+                setIsLoggedIn(true);
+                if (profile.role === 'owner' && (activeTab === 'shop' || !sessionStorage.getItem('lp_active_tab'))) {
+                  setActiveTab('owner-dashboard');
+                }
+              } catch {
+                setCurrentUser(null);
+                setIsLoggedIn(false);
+              }
+            } else {
+              setCurrentUser(null);
+              setIsLoggedIn(false);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Supabase getSession error on load:', err);
+        if (isMounted) {
+          const saved = localStorage.getItem('local_pantry_user');
+          if (saved) {
+            try {
+              const profile: UserProfile = JSON.parse(saved);
+              setCurrentUser(profile);
+              setIsLoggedIn(true);
+            } catch {
+              setCurrentUser(null);
+              setIsLoggedIn(false);
+            }
+          } else {
+            setCurrentUser(null);
+            setIsLoggedIn(false);
+          }
+        }
+      } finally {
+        if (isMounted) {
+          setIsAuthChecking(false);
+        }
+      }
+    }
+
+    initSession();
+
+    // 2. Auth state change listener: listen to SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, and INITIAL_SESSION
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        const profile = mapSupabaseUserToProfile(session.user);
-        setCurrentUser(profile);
-        setIsLoggedIn(true);
-      } else {
-        setIsLoggedIn(false);
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!isMounted) return;
+
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        if (session?.user) {
+          const profile = mapSupabaseUserToProfile(session.user);
+          setCurrentUser(profile);
+          setIsLoggedIn(true);
+          try {
+            localStorage.setItem('local_pantry_user', JSON.stringify(profile));
+          } catch {}
+          if (event === 'SIGNED_IN' && profile.role === 'owner') {
+            setActiveTab('owner-dashboard');
+          }
+        }
+      } else if (event === 'SIGNED_OUT') {
         setCurrentUser(null);
+        setIsLoggedIn(false);
+        try {
+          localStorage.removeItem('local_pantry_user');
+          sessionStorage.removeItem('lp_active_tab');
+        } catch {}
         setActiveTab('shop');
+      } else if (event === 'INITIAL_SESSION') {
+        if (session?.user) {
+          const profile = mapSupabaseUserToProfile(session.user);
+          setCurrentUser(profile);
+          setIsLoggedIn(true);
+          try {
+            localStorage.setItem('local_pantry_user', JSON.stringify(profile));
+          } catch {}
+          if (profile.role === 'owner' && (activeTab === 'shop' || !sessionStorage.getItem('lp_active_tab'))) {
+            setActiveTab('owner-dashboard');
+          }
+        }
       }
     });
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, []);
 
-  // Fetch initial products and orders strictly from Supabase
+  // Fetch initial products and orders strictly from Supabase + Subscribe to 100% Real-Time streams
   useEffect(() => {
     let isMounted = true;
 
@@ -152,7 +254,7 @@ export default function App() {
 
     loadData();
 
-    // Setup live subscription to orders so new checkouts & status changes update instantly
+    // 100% Real-time subscription to orders (inserts, updates, status changes stream instantly)
     const unsubscribeOrders = subscribeToOrders(async () => {
       const orderResult = await getSupabaseOrders();
       if (orderResult.data && isMounted) {
@@ -160,9 +262,34 @@ export default function App() {
       }
     });
 
+    // 100% Real-time subscription to products & inventory (prices, stock status stream instantly)
+    const unsubscribeProducts = subscribeToProducts(async () => {
+      const prodResult = await getSupabaseProducts();
+      if (prodResult.data && isMounted) {
+        setProducts(prodResult.data);
+      }
+    });
+
+    // Automatic re-sync when tab visibility is restored
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && isSupabaseConfigured) {
+        const [prodResult, orderResult] = await Promise.all([
+          getSupabaseProducts(),
+          getSupabaseOrders(),
+        ]);
+        if (isMounted) {
+          if (prodResult.data) setProducts(prodResult.data);
+          if (orderResult.data) setOrders(orderResult.data);
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       isMounted = false;
       unsubscribeOrders();
+      unsubscribeProducts();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
@@ -171,6 +298,9 @@ export default function App() {
     if (profile) {
       setCurrentUser(profile);
       setIsLoggedIn(true);
+      try {
+        localStorage.setItem('local_pantry_user', JSON.stringify(profile));
+      } catch {}
       if (profile.role === 'owner' || role === 'owner') {
         setActiveTab('owner-dashboard');
       } else {
@@ -186,6 +316,10 @@ export default function App() {
     }
     setIsLoggedIn(false);
     setCurrentUser(null);
+    try {
+      localStorage.removeItem('local_pantry_user');
+      sessionStorage.removeItem('lp_active_tab');
+    } catch {}
     setActiveTab('shop');
     setIsAccountOpen(false);
   };
@@ -213,6 +347,13 @@ export default function App() {
     productId: string,
     stock: 'In Stock' | 'Low Stock' | 'Out of Stock'
   ) => {
+    setProducts((prev) =>
+      prev.map((prod) =>
+        prod.id === productId
+          ? { ...prod, stock_status: stock, stockStatus: stock }
+          : prod
+      )
+    );
     if (isSupabaseConfigured) {
       await updateSupabaseProductStock(productId, stock);
     }
@@ -364,7 +505,10 @@ export default function App() {
         wishlistCount={wishlistIds.size}
         currentUser={currentUser}
         isLoggedIn={isLoggedIn}
-        onOpenCart={() => setIsCartOpen(true)}
+        onOpenCart={() => {
+          setActiveTab('checkout');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
         onOpenWishlist={() => setIsWishlistOpen(true)}
         onOpenSearch={() => setIsSearchOpen(true)}
         onOpenAccount={() => setIsAccountOpen(true)}
@@ -441,6 +585,24 @@ export default function App() {
           </div>
         ) : activeTab === 'contact' ? (
           <ContactPage onBackToShop={() => setActiveTab('shop')} />
+        ) : activeTab === 'checkout' ? (
+          /* DEDICATED FULL-PAGE CHECKOUT & PANTRY BAG ROUTE */
+          <CheckoutPage
+            items={cartItems}
+            onUpdateQuantity={handleUpdateQuantity}
+            onRemoveItem={handleRemoveFromCart}
+            onClearCart={handleClearCart}
+            onBackToShop={() => {
+              setActiveTab('shop');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onOrderCreated={handleOrderCreated}
+            currentUser={currentUser}
+            onNavigateToOwnerDashboard={() => {
+              setActiveTab('owner-dashboard');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
         ) : activeTab === 'owner-dashboard' ? (
           /* OWNER DASHBOARD ROUTE (Protected with Strict Role Check) */
           isOwner && currentUser ? (
@@ -451,7 +613,6 @@ export default function App() {
               onUpdateOrderStatus={handleUpdateOrderStatus}
               onUpdateProductPrice={handleUpdateProductPrice}
               onUpdateProductStock={handleUpdateProductStock}
-              onRefreshData={handleRefreshData}
               onNavigateToShop={() => setActiveTab('shop')}
             />
           ) : (
@@ -509,6 +670,11 @@ export default function App() {
         onAddToCart={handleAddToCart}
         onToggleWishlist={handleToggleWishlist}
         isWishlisted={selectedProduct ? wishlistIds.has(selectedProduct.id) : false}
+        onProceedToCheckout={() => {
+          setSelectedProduct(null);
+          setActiveTab('checkout');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
       />
 
       {/* Recipe Detail Modal */}
@@ -521,19 +687,6 @@ export default function App() {
         }
         onClose={() => setSelectedRecipe(null)}
         onAddToCart={(prod) => handleAddToCart(prod, 1, 'Standard')}
-      />
-
-      {/* Slide-over Cart Drawer with Checkout Flow */}
-      <CartDrawer
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        items={cartItems}
-        onUpdateQuantity={handleUpdateQuantity}
-        onRemoveItem={handleRemoveFromCart}
-        onClearCart={handleClearCart}
-        onExplore={scrollToCatalog}
-        onOrderCreated={handleOrderCreated}
-        currentUser={currentUser}
       />
 
       {/* Slide-over Wishlist Drawer */}

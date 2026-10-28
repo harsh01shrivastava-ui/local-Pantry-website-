@@ -7,6 +7,7 @@ interface ProductModalProps {
   onAddToCart: (product: Product, quantity: number, jarSize: 'Standard' | 'Grand (Double)') => void;
   onToggleWishlist: (productId: string) => void;
   isWishlisted: boolean;
+  onProceedToCheckout?: () => void;
 }
 
 export const ProductModal: React.FC<ProductModalProps> = ({
@@ -15,6 +16,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   onAddToCart,
   onToggleWishlist,
   isWishlisted,
+  onProceedToCheckout,
 }) => {
   const [quantity, setQuantity] = useState(1);
   const [jarSize, setJarSize] = useState<'Standard' | 'Grand (Double)'>('Standard');
@@ -32,8 +34,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     setAdded(true);
     setTimeout(() => {
       setAdded(false);
-      onClose();
-    }, 1200);
+    }, 2500);
   };
 
   return (
@@ -46,7 +47,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         <button
           onClick={onClose}
           aria-label="Close modal"
-          className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm text-[#57423b] hover:text-[#1e1b19] flex items-center justify-center shadow-md transition-colors"
+          className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm text-[#57423b] hover:text-[#1e1b19] flex items-center justify-center shadow-md transition-colors cursor-pointer"
         >
           <span className="material-symbols-outlined text-[20px]">close</span>
         </button>
@@ -80,7 +81,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
             )}
             <button
               onClick={() => onToggleWishlist(product.id)}
-              className={`absolute bottom-4 left-4 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md transition-colors ${
+              className={`absolute bottom-4 left-4 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md transition-colors cursor-pointer ${
                 isWishlisted ? 'text-[#9f3c16]' : 'text-[#57423b] hover:text-[#9f3c16]'
               }`}
             >
@@ -123,7 +124,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => setJarSize('Standard')}
-                    className={`py-2 px-3 rounded-lg text-xs font-semibold border transition-all text-left flex flex-col ${
+                    className={`py-2 px-3 rounded-lg text-xs font-semibold border transition-all text-left flex flex-col cursor-pointer ${
                       jarSize === 'Standard'
                         ? 'border-[#9f3c16] bg-[#fbf2ee] text-[#9f3c16]'
                         : 'border-[#efe6e3] hover:border-[#dec0b7] text-[#1e1b19]'
@@ -134,7 +135,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                   </button>
                   <button
                     onClick={() => setJarSize('Grand (Double)')}
-                    className={`py-2 px-3 rounded-lg text-xs font-semibold border transition-all text-left flex flex-col ${
+                    className={`py-2 px-3 rounded-lg text-xs font-semibold border transition-all text-left flex flex-col cursor-pointer ${
                       jarSize === 'Grand (Double)'
                         ? 'border-[#9f3c16] bg-[#fbf2ee] text-[#9f3c16]'
                         : 'border-[#efe6e3] hover:border-[#dec0b7] text-[#1e1b19]'
@@ -150,7 +151,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
               <div className="flex border-b border-[#efe6e3] mb-4 gap-4 text-xs font-semibold">
                 <button
                   onClick={() => setActiveTab('details')}
-                  className={`pb-2 border-b-2 transition-colors ${
+                  className={`pb-2 border-b-2 transition-colors cursor-pointer ${
                     activeTab === 'details'
                       ? 'border-[#9f3c16] text-[#9f3c16]'
                       : 'border-transparent text-[#57423b] hover:text-[#1e1b19]'
@@ -160,7 +161,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 </button>
                 <button
                   onClick={() => setActiveTab('ingredients')}
-                  className={`pb-2 border-b-2 transition-colors ${
+                  className={`pb-2 border-b-2 transition-colors cursor-pointer ${
                     activeTab === 'ingredients'
                       ? 'border-[#9f3c16] text-[#9f3c16]'
                       : 'border-transparent text-[#57423b] hover:text-[#1e1b19]'
@@ -170,7 +171,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 </button>
                 <button
                   onClick={() => setActiveTab('pairings')}
-                  className={`pb-2 border-b-2 transition-colors ${
+                  className={`pb-2 border-b-2 transition-colors cursor-pointer ${
                     activeTab === 'pairings'
                       ? 'border-[#9f3c16] text-[#9f3c16]'
                       : 'border-transparent text-[#57423b] hover:text-[#1e1b19]'
@@ -233,49 +234,65 @@ export const ProductModal: React.FC<ProductModalProps> = ({
             </div>
 
             {/* Quantity and Add to Cart Row */}
-            <div className="pt-4 border-t border-[#efe6e3] flex items-center gap-3">
-              {/* Stepper */}
-              <div className="flex items-center border border-[#efe6e3] rounded-lg bg-[#fbf2ee] p-1">
+            <div className="pt-4 border-t border-[#efe6e3] space-y-2.5">
+              <div className="flex items-center gap-3">
+                {/* Stepper */}
+                <div className="flex items-center border border-[#efe6e3] rounded-xl bg-[#fbf2ee] p-1">
+                  <button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="w-8 h-8 flex items-center justify-center text-[#1e1b19] hover:bg-white rounded-lg transition-colors cursor-pointer text-sm font-bold"
+                  >
+                    -
+                  </button>
+                  <span className="w-8 text-center text-xs font-bold tabular-nums">
+                    {quantity}
+                  </span>
+                  <button
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="w-8 h-8 flex items-center justify-center text-[#1e1b19] hover:bg-white rounded-lg transition-colors cursor-pointer text-sm font-bold"
+                  >
+                    +
+                  </button>
+                </div>
+
+                {/* Add CTA */}
                 <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="w-7 h-7 flex items-center justify-center text-[#1e1b19] hover:bg-white rounded transition-colors"
+                  onClick={handleAdd}
+                  className={`flex-1 py-3 px-5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer ${
+                    added
+                      ? 'bg-[#516444] text-white'
+                      : 'bg-[#9f3c16] hover:bg-[#bf542c] text-white'
+                  }`}
                 >
-                  -
-                </button>
-                <span className="w-8 text-center text-xs font-bold tabular-nums">
-                  {quantity}
-                </span>
-                <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="w-7 h-7 flex items-center justify-center text-[#1e1b19] hover:bg-white rounded transition-colors"
-                >
-                  +
+                  {added ? (
+                    <>
+                      <span className="material-symbols-outlined text-[18px]">done</span>
+                      <span>Added to Pantry Bag!</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined text-[18px]">
+                        shopping_bag
+                      </span>
+                      <span>Add to Bag • ₹{currentPrice * quantity}</span>
+                    </>
+                  )}
                 </button>
               </div>
 
-              {/* Add CTA */}
-              <button
-                onClick={handleAdd}
-                className={`flex-1 py-3 px-5 rounded-lg text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-sm ${
-                  added
-                    ? 'bg-[#516444] text-white'
-                    : 'bg-[#9f3c16] hover:bg-[#bf542c] text-white'
-                }`}
-              >
-                {added ? (
-                  <>
-                    <span className="material-symbols-outlined text-[18px]">done</span>
-                    <span>Added to Pantry Bag!</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="material-symbols-outlined text-[18px]">
-                      shopping_bag
-                    </span>
-                    <span>Add to Bag • ₹{currentPrice * quantity}</span>
-                  </>
-                )}
-              </button>
+              {added && onProceedToCheckout && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onProceedToCheckout();
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-[#516444]/10 hover:bg-[#516444]/20 text-[#516444] text-[12px] font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-[#516444]/20 animate-fadeIn"
+                >
+                  <span className="material-symbols-outlined text-[17px]">shopping_cart_checkout</span>
+                  <span>Proceed to Full-Page Checkout &amp; Bag Review</span>
+                  <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
