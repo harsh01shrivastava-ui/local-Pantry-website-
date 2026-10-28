@@ -3,6 +3,7 @@ export type UserRole = 'customer' | 'owner';
 export interface UserProfile {
   id: string;
   name: string;
+  username?: string;
   email: string;
   role: UserRole;
   avatarInitials: string;

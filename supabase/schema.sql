@@ -133,6 +133,16 @@ CREATE POLICY "Store owner can update order status"
         ((auth.jwt() -> 'user_metadata' ->> 'role') = 'owner' AND auth.jwt() ->> 'email' = 'harsh01.shrivastava@gmail.com')
     );
 
+-- 4. Allow Store Owner to delete orders
+DROP POLICY IF EXISTS "Store owner can delete orders" ON public.orders;
+CREATE POLICY "Store owner can delete orders"
+    ON public.orders FOR DELETE
+    USING (
+        (auth.jwt() ->> 'email' = 'harsh01.shrivastava@gmail.com') OR
+        ((auth.jwt() -> 'app_metadata' ->> 'role') = 'owner') OR
+        ((auth.jwt() -> 'user_metadata' ->> 'role') = 'owner' AND auth.jwt() ->> 'email' = 'harsh01.shrivastava@gmail.com')
+    );
+
 -- Enable Supabase Realtime replication on orders (so owner dashboard updates instantly)
 ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.products;
@@ -356,106 +366,9 @@ ON CONFLICT (id) DO UPDATE SET
     updated_at = NOW();
 
 -- ==============================================================================
--- 6. INITIAL SEED DATA FOR ORDERS
+-- 6. ORDERS TABLE - LIVE ZERO-MOCK STATE
 -- ==============================================================================
-INSERT INTO public.orders (
-    id, customer_name, customer_email, customer_phone, shipping_address, city, pincode, items, subtotal, shipping_fee, total, payment_method, status, notes
-) VALUES
-(
-    'LP-89412',
-    'Ananya Mehta',
-    'ananya.mehta@example.com',
-    '+91 98201 12345',
-    'Flat 402, Sea View Apartments, Bandra West',
-    'Mumbai',
-    '400050',
-    '[
-        {"productId": "sichuan-chilli-oil", "productName": "Sichuan Chilli Oil", "quantity": 2, "jarSize": "Standard", "unitPrice": 350},
-        {"productId": "smokey-tandoori", "productName": "Smokey Tandoori", "quantity": 1, "jarSize": "Standard", "unitPrice": 250}
-    ]'::jsonb,
-    950.00,
-    0.00,
-    950.00,
-    'UPI',
-    'Pending',
-    'Please pack with extra thermal bubble wrap for air transit.'
-),
-(
-    'LP-89390',
-    'Vikramaditya Rao',
-    'vikram.rao@techhub.in',
-    '+91 99000 88776',
-    'Villa 14, Palm Meadows, Whitefield',
-    'Bengaluru',
-    '560066',
-    '[
-        {"productId": "podi", "productName": "Podi", "quantity": 3, "jarSize": "Standard", "unitPrice": 250},
-        {"productId": "pesto", "productName": "Pesto", "quantity": 1, "jarSize": "Standard", "unitPrice": 410}
-    ]'::jsonb,
-    1160.00,
-    0.00,
-    1160.00,
-    'Card',
-    'Processing',
-    'Fragile glass containers.'
-),
-(
-    'LP-89345',
-    'Priyanka Sen',
-    'priyanka.sen@designworks.com',
-    '+91 98311 22334',
-    '72/B Park Street, Apt 3C',
-    'Kolkata',
-    '700016',
-    '[
-        {"productId": "chunky-pizza-sauce", "productName": "Chunky Pizza Sauce", "quantity": 2, "jarSize": "Standard", "unitPrice": 250},
-        {"productId": "mint-dip", "productName": "Mint Dip", "quantity": 1, "jarSize": "Standard", "unitPrice": 210}
-    ]'::jsonb,
-    710.00,
-    99.00,
-    809.00,
-    'UPI',
-    'Processing',
-    NULL
-),
-(
-    'LP-89218',
-    'Devendra Rathore',
-    'devendra.rathore@rajasthan.gov.in',
-    '+91 94141 55667',
-    'Plot 12, Malviya Nagar',
-    'Jaipur',
-    '302017',
-    '[
-        {"productId": "kesari-shrikhand", "productName": "Kesari Shrikhand", "quantity": 2, "jarSize": "Standard", "unitPrice": 210},
-        {"productId": "hummus", "productName": "Hummus", "quantity": 2, "jarSize": "Standard", "unitPrice": 210}
-    ]'::jsonb,
-    840.00,
-    99.00,
-    939.00,
-    'UPI',
-    'Completed',
-    'Dispatched via Rajasthan Express Courier.'
-),
-(
-    'LP-89104',
-    'Kavita Chawla',
-    'kavita.chawla@delhidiaries.org',
-    '+91 98110 99887',
-    'D-56 Defence Colony',
-    'New Delhi',
-    '110024',
-    '[
-        {"productId": "apple-tam-jam", "productName": "Apple Tam Jam", "quantity": 1, "jarSize": "Standard", "unitPrice": 330},
-        {"productId": "sichuan-chilli-oil", "productName": "Sichuan Chilli Oil", "quantity": 1, "jarSize": "Standard", "unitPrice": 350},
-        {"productId": "smokey-tandoori", "productName": "Smokey Tandoori", "quantity": 1, "jarSize": "Standard", "unitPrice": 250}
-    ]'::jsonb,
-    930.00,
-    0.00,
-    930.00,
-    'Card',
-    'Completed',
-    'Includes handwritten gift message.'
-)
-ON CONFLICT (id) DO NOTHING;
+-- No mock or test orders are seeded. The orders queue begins completely fresh with
+-- zero records. All orders stream in live as real customers check out on the website.
+
 

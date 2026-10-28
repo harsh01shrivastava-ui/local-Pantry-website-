@@ -30,25 +30,15 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   onNavigateToShop,
   onNavigateToDashboard,
 }) => {
-  // Auth Form State: 'signin' | 'signup'
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
-
-  const [fullNameInput, setFullNameInput] = useState('');
+  const [usernameInput, setUsernameInput] = useState('');
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
-
+  const [showEmail, setShowEmail] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
   if (!isOpen) return null;
-
-  const handleFillOwnerEmail = () => {
-    setEmailInput(OWNER_EMAIL);
-    setPasswordInput('');
-    setErrorMessage('');
-    setSuccessMessage('Owner email filled. Please enter your secure owner password.');
-  };
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,62 +46,66 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     setSuccessMessage('');
     setLoading(true);
 
+    const targetEmail = emailInput.trim();
+    if (!targetEmail) {
+      setErrorMessage('Please enter your email address.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      if (!isSupabaseConfigured) {
-        throw new Error('Supabase configuration is missing in .env file.');
-      }
+      const isOwnerAttempt =
+        targetEmail.toLowerCase() === OWNER_EMAIL.toLowerCase() ||
+        targetEmail.toLowerCase() === 'harsh01.shrivastava@gmail.com';
 
-      if (authMode === 'signup') {
-        const trimmedEmail = emailInput.trim();
-        const { data, error } = await signUpUser({
-          email: trimmedEmail,
-          password: passwordInput,
-          fullName: fullNameInput.trim() || 'Pantry Patron',
-          role: 'customer',
-        });
-
-        if (error) {
-          setErrorMessage(error.message);
-          setLoading(false);
-          return;
-        }
-
-        if (data?.user) {
-          const profile = mapSupabaseUserToProfile(data.user);
-          if (data.session) {
-            setSuccessMessage('Account created and signed in successfully!');
-            onLogin(profile.role, profile);
-            setTimeout(() => onClose(), 800);
-          } else {
-            setSuccessMessage(
-              'Account created! If email confirmation is enabled in your Supabase project, please check your inbox.'
-            );
-          }
-        }
-      } else {
-        // Sign In
+      if (isSupabaseConfigured) {
         const { data, error } = await signInUser({
-          email: emailInput.trim(),
+          email: targetEmail,
           password: passwordInput,
         });
 
-        if (error) {
-          setErrorMessage(error.message);
-          setLoading(false);
-          return;
-        }
-
-        if (data?.user) {
+        if (!error && data?.user) {
           const profile = mapSupabaseUserToProfile(data.user);
+          if (usernameInput.trim() && profile.role !== 'owner') {
+            profile.username = usernameInput.trim();
+          }
           setSuccessMessage(
             profile.role === 'owner'
-              ? `Welcome back, Store Owner (${profile.name})!`
+              ? 'Store Owner verified! Redirecting...'
               : `Welcome back, ${profile.name}!`
           );
           onLogin(profile.role, profile);
           setTimeout(() => onClose(), 600);
+          return;
+        }
+
+        if (isOwnerAttempt) {
+          setErrorMessage(error?.message || 'Invalid owner credentials. Please verify your password.');
+          setLoading(false);
+          return;
         }
       }
+
+      // Any other credentials open customer storefront
+      const trimmedUser = usernameInput.trim();
+      const sanitizedUsername = trimmedUser || targetEmail.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '_');
+      const displayName = trimmedUser || targetEmail.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+      const customerProfile: UserProfile = {
+        id: `customer-${Date.now()}`,
+        name: displayName || 'Pantry Patron',
+        username: sanitizedUsername,
+        email: targetEmail,
+        role: 'customer',
+        avatarInitials: (sanitizedUsername[0] || displayName[0] || 'P').toUpperCase(),
+        phone: '+91 98200 12345',
+        address: 'Banswara Artisanal Pantry',
+        city: 'Banswara',
+      };
+
+      setSuccessMessage(`Welcome to The Local Pantry, ${customerProfile.name}!`);
+      onLogin('customer', customerProfile);
+      setTimeout(() => onClose(), 600);
     } catch (err: any) {
       setErrorMessage(err.message || 'An unexpected authentication error occurred.');
     } finally {
@@ -153,9 +147,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
           <h2 className="font-serif text-[24px] sm:text-[26px] text-[#1e1b19] font-normal">
             {isLoggedIn && currentUser
               ? 'Account & Session'
-              : authMode === 'signin'
-              ? 'Sign In to Your Account'
-              : 'Create Customer Account'}
+              : 'Sign In'}
           </h2>
         </div>
 
@@ -165,8 +157,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span>Supabase Database Connected</span>
           </div>
-          <span className="text-[10px] text-[#8a726a] font-mono">
-            {OWNER_EMAIL ? `Owner: ${OWNER_EMAIL}` : 'Role-Protected'}
+          <span className="text-[10px] text-[#516444] font-medium tracking-wide">
+            Role-Protected Session
           </span>
         </div>
 
@@ -198,9 +190,28 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                       {currentUser.role === 'owner' ? 'Store Owner' : 'Verified Patron'}
                     </span>
                   </div>
-                  <span className="text-[12px] text-[#57423b] block mt-0.5 font-mono">
-                    {currentUser.email}
+
+                  {/* Clean Username Handle */}
+                  <span className="text-[12px] text-[#8a726a] font-sans font-medium block mt-0.5">
+                    @{currentUser.username || currentUser.name.toLowerCase().replace(/\s+/g, '_')}
                   </span>
+
+                  {/* Privacy-Preserved Hidden Email */}
+                  <div className="flex items-center gap-1.5 mt-1 text-[11px] text-[#8a726a]">
+                    <span>Email:</span>
+                    {showEmail ? (
+                      <span className="font-mono text-[#57423b] text-[11px]">{currentUser.email}</span>
+                    ) : (
+                      <span className="font-mono text-[#8a726a] tracking-widest text-[10px]">•••••••••••••</span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowEmail(!showEmail)}
+                      className="text-[#9f3c16] hover:underline cursor-pointer ml-1 text-[10px] font-semibold"
+                    >
+                      {showEmail ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -210,7 +221,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               <div className="space-y-3">
                 <div className="p-3 bg-[#516444]/10 rounded-xl border border-[#516444]/20 text-[12px] text-[#516444] flex items-center gap-2">
                   <span className="material-symbols-outlined text-[18px]">verified_user</span>
-                  <span>Store Owner access verified for <strong>{currentUser.email}</strong>.</span>
+                  <span>Store Owner access verified for <strong>Chef {currentUser.name}</strong>.</span>
                 </div>
 
                 <button
@@ -270,57 +281,6 @@ export const AccountModal: React.FC<AccountModalProps> = ({
         ) : (
           /* LOGGED OUT / AUTH FORM */
           <div>
-            {/* Mode Toggle: Sign In vs Sign Up */}
-            <div className="flex border-b border-[#efe6e3] mb-5">
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode('signin');
-                  setErrorMessage('');
-                  setSuccessMessage('');
-                }}
-                className={`flex-1 pb-2.5 text-[14px] font-semibold transition-colors border-b-2 cursor-pointer ${
-                  authMode === 'signin'
-                    ? 'border-[#9f3c16] text-[#9f3c16]'
-                    : 'border-transparent text-[#57423b] hover:text-[#1e1b19]'
-                }`}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode('signup');
-                  setErrorMessage('');
-                  setSuccessMessage('');
-                }}
-                className={`flex-1 pb-2.5 text-[14px] font-semibold transition-colors border-b-2 cursor-pointer ${
-                  authMode === 'signup'
-                    ? 'border-[#9f3c16] text-[#9f3c16]'
-                    : 'border-transparent text-[#57423b] hover:text-[#1e1b19]'
-                }`}
-              >
-                Create Account
-              </button>
-            </div>
-
-            {/* Owner Email Hint / Quick Fill */}
-            {authMode === 'signin' && (
-              <div className="mb-4 p-3 bg-[#fbf2ee] rounded-xl border border-[#efe6e3] flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2 text-[#57423b]">
-                  <span className="material-symbols-outlined text-[18px] text-[#9f3c16]">badge</span>
-                  <span>Store Owner: <strong>{OWNER_EMAIL}</strong></span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleFillOwnerEmail}
-                  className="text-[11px] font-semibold text-[#9f3c16] hover:underline cursor-pointer"
-                >
-                  Fill Email
-                </button>
-              </div>
-            )}
-
             {/* Error Message Banner */}
             {errorMessage && (
               <div className="p-3 mb-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-[12px] flex items-start gap-2">
@@ -339,30 +299,27 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
             {/* Auth Form */}
             <form onSubmit={handleAuthSubmit} className="space-y-3.5">
-              {authMode === 'signup' && (
-                <div>
-                  <label className="block text-[12px] font-semibold text-[#57423b] mb-1 font-sans">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Ananya Mehta"
-                    value={fullNameInput}
-                    onChange={(e) => setFullNameInput(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#fbf2ee] rounded-xl text-[13px] text-[#1e1b19] border border-[#efe6e3] focus:border-[#9f3c16] focus:bg-white outline-none transition-colors"
-                  />
-                </div>
-              )}
+              <div>
+                <label className="block text-[12px] font-semibold text-[#57423b] mb-1 font-sans">
+                  Username <span className="text-[11px] font-normal text-[#8a726a]">(for visitors/patrons)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. aditi_k or patron handle"
+                  value={usernameInput}
+                  onChange={(e) => setUsernameInput(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-[#fbf2ee] rounded-xl text-[13px] text-[#1e1b19] border border-[#efe6e3] focus:border-[#9f3c16] focus:bg-white outline-none transition-colors placeholder:text-[#8a726a]"
+                />
+              </div>
 
               <div>
                 <label className="block text-[12px] font-semibold text-[#57423b] mb-1 font-sans">
-                  Email Address
+                  Email
                 </label>
                 <input
                   type="email"
                   required
-                  placeholder="your.email@example.com"
+                  placeholder="Enter your email"
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-[#fbf2ee] rounded-xl text-[13px] text-[#1e1b19] border border-[#efe6e3] focus:border-[#9f3c16] focus:bg-white outline-none transition-colors"
@@ -376,7 +333,6 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 <input
                   type="password"
                   required
-                  minLength={6}
                   placeholder="Enter your password"
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
@@ -389,20 +345,10 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 disabled={loading}
                 className="w-full mt-2 py-3 px-4 rounded-xl bg-[#9f3c16] hover:bg-[#bf542c] disabled:opacity-70 text-white font-semibold text-[14px] flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer active:scale-98"
               >
-                {loading ? (
+                {loading && (
                   <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <span className="material-symbols-outlined text-[18px]">
-                    {authMode === 'signin' ? 'login' : 'person_add'}
-                  </span>
                 )}
-                <span>
-                  {loading
-                    ? 'Authenticating with Supabase...'
-                    : authMode === 'signin'
-                    ? 'Sign In'
-                    : 'Create Customer Account'}
-                </span>
+                <span>{loading ? 'Signing In...' : 'Sign In'}</span>
               </button>
             </form>
           </div>

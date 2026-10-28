@@ -533,6 +533,7 @@ export default function App() {
         onClearCart={handleClearCart}
         onExplore={scrollToCatalog}
         onOrderCreated={handleOrderCreated}
+        currentUser={currentUser}
       />
 
       {/* Slide-over Wishlist Drawer */}

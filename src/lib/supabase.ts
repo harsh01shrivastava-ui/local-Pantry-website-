@@ -139,8 +139,45 @@ export async function updateSupabaseProductStock(productId: string, stock_status
     .eq('id', productId);
 }
 
+// Known legacy mock or test order IDs to exclude
+export const DUMMY_OR_TEST_IDS = new Set([
+  'LP-TEST-4586',
+  'LP-94018',
+  'LP-94015',
+  'LP-94009',
+  'LP-94021',
+  'LP-89412',
+  'LP-89390',
+  'LP-89345',
+  'LP-89218',
+  'LP-89104',
+]);
+
+export const isDummyOrTestOrder = (row: any): boolean => {
+  if (!row || !row.id) return false;
+  const idStr = String(row.id).toUpperCase();
+  if (idStr.includes('TEST') || DUMMY_OR_TEST_IDS.has(row.id)) return true;
+  if (
+    row.customer_email &&
+    (row.customer_email.toLowerCase().includes('test@') ||
+      row.customer_email.toLowerCase().includes('@example.com'))
+  ) {
+    return true;
+  }
+  if (
+    row.customer_name &&
+    (row.customer_name.toLowerCase().includes('test customer') ||
+      row.customer_name.toLowerCase().includes('dummy'))
+  ) {
+    return true;
+  }
+  return false;
+};
+
 /**
- * Fetch all customer orders from Supabase 'orders' table
+ * Fetch all customer orders from Supabase 'orders' table.
+ * Strictly excludes any test/mock seed orders to ensure the live dashboard
+ * starts fresh with zero mock records.
  */
 export async function getSupabaseOrders(): Promise<{ data: CustomerOrder[] | null; error: any }> {
   if (!isSupabaseConfigured) {
@@ -156,7 +193,10 @@ export async function getSupabaseOrders(): Promise<{ data: CustomerOrder[] | nul
     if (error) throw error;
 
     if (data) {
-      const mapped: CustomerOrder[] = data.map((row: any) => ({
+      // Filter out mock / test orders
+      const realOrders = data.filter((row: any) => !isDummyOrTestOrder(row));
+
+      const mapped: CustomerOrder[] = realOrders.map((row: any) => ({
         id: row.id,
         customerName: row.customer_name,
         customerEmail: row.customer_email,
@@ -310,21 +350,33 @@ export async function seedSampleOrdersToSupabase(orders: CustomerOrder[]) {
  */
 export const mapSupabaseUserToProfile = (user: User): UserProfile => {
   const isOwner = isUserOwner(user);
-  const fullName =
-    user.user_metadata?.full_name ||
-    user.user_metadata?.name ||
-    (isOwner ? 'Chef Ramesh Joshi' : user.email?.split('@')[0] || 'Pantry Patron');
+  const fullName = isOwner
+    ? 'Vikas Oli'
+    : user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      user.user_metadata?.username ||
+      user.email?.split('@')[0] ||
+      'Pantry Patron';
 
-  const initials = fullName
-    .split(' ')
-    .filter(Boolean)
-    .map((n: string) => n[0].toUpperCase())
-    .slice(0, 2)
-    .join('') || (isOwner ? 'RJ' : 'LP');
+  const username = isOwner
+    ? 'vikas_oli'
+    : user.user_metadata?.username ||
+      user.user_metadata?.user_name ||
+      fullName.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+
+  const initials = isOwner
+    ? 'VO'
+    : fullName
+        .split(' ')
+        .filter(Boolean)
+        .map((n: string) => n[0].toUpperCase())
+        .slice(0, 2)
+        .join('') || 'LP';
 
   return {
     id: user.id,
     name: fullName,
+    username: username,
     email: user.email || '',
     role: isOwner ? 'owner' : 'customer',
     avatarInitials: initials,
@@ -341,11 +393,13 @@ export async function signUpUser({
   email,
   password,
   fullName,
+  username,
   role = 'customer',
 }: {
   email: string;
   password: string;
   fullName: string;
+  username?: string;
   role?: 'customer' | 'owner';
 }) {
   if (!isSupabaseConfigured) {
@@ -364,6 +418,7 @@ export async function signUpUser({
     options: {
       data: {
         full_name: fullName,
+        username: username || fullName.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
         role: sanitizedRole,
       },
     },

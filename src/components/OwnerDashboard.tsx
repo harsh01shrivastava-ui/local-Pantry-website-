@@ -52,6 +52,14 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
   const processingOrders = orders.filter((o) => o.status === 'Processing').length;
   const inStockCount = Object.values(productStockMap).filter((s) => s === 'In Stock').length;
 
+  // Calculate total jars pending packaging across pending/processing orders
+  const pendingJars = orders
+    .filter((o) => o.status === 'Pending' || o.status === 'Processing')
+    .reduce((sum, o) => {
+      if (!o.items || !Array.isArray(o.items)) return sum;
+      return sum + o.items.reduce((iSum, item) => iSum + (item.quantity || 1), 0);
+    }, 0);
+
   // Filter orders
   const filteredOrders = orders.filter((order) => {
     const matchesStatus = orderStatusFilter === 'All' || order.status === orderStatusFilter;
@@ -136,7 +144,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
               </div>
 
               <h1 className="font-serif text-[26px] sm:text-[34px] text-[#1e1b19] font-normal tracking-tight leading-tight">
-                Welcome Chef {currentUser.name}
+                Welcome {currentUser.name.startsWith('Chef') ? currentUser.name : `Chef ${currentUser.name}`}
               </h1>
               <p className="text-[14px] text-[#57423b] mt-1">
                 Live Kitchen Studio • Banswara, Rajasthan • Real-time Supabase Database Sync for Orders &amp; Inventory.
@@ -194,7 +202,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
               {totalOrders}
             </div>
             <div className="text-[11px] sm:text-[12px] text-[#516444] font-medium mt-1">
-              {pendingOrders + processingOrders} active in kitchen
+              {totalOrders === 0 ? 'No active orders' : `${pendingOrders + processingOrders} active in kitchen`}
             </div>
           </div>
 
@@ -212,7 +220,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
               ₹{totalRevenue.toLocaleString('en-IN')}
             </div>
             <div className="text-[11px] sm:text-[12px] text-[#516444] font-medium mt-1">
-              ₹{(totalRevenue / (totalOrders || 1)).toFixed(0)} avg order value
+              {totalOrders === 0 ? 'Awaiting live orders' : `₹${(totalRevenue / totalOrders).toFixed(0)} avg order value`}
             </div>
           </div>
 
@@ -245,10 +253,10 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
               </span>
             </div>
             <div className="font-serif text-[26px] sm:text-[32px] font-normal text-[#1e1b19] tabular-nums">
-              {pendingOrders} Jars
+              {pendingJars} Jars
             </div>
             <div className="text-[11px] sm:text-[12px] text-[#9f3c16] font-medium mt-1">
-              Next air courier: Tuesday
+              {pendingJars === 0 ? 'Queue clear' : 'Next air courier: Tuesday'}
             </div>
           </div>
         </div>
@@ -335,10 +343,29 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
             </div>
 
             {/* Orders List / Cards */}
-            {filteredOrders.length === 0 ? (
+            {orders.length === 0 ? (
+              <div className="bg-white p-10 sm:p-14 rounded-2xl border border-[#efe6e3] text-center shadow-xs">
+                <div className="w-14 h-14 rounded-2xl bg-[#9f3c16]/10 text-[#9f3c16] flex items-center justify-center mx-auto mb-3">
+                  <span className="material-symbols-outlined text-[28px]">inbox</span>
+                </div>
+                <h3 className="font-serif text-[22px] text-[#1e1b19] font-medium">No Incoming Orders</h3>
+                <p className="text-[13px] text-[#57423b] mt-1.5 max-w-md mx-auto leading-relaxed">
+                  Your kitchen order queue is completely clear and fresh. When customer orders are placed in the storefront, they will stream in here automatically via Supabase Realtime.
+                </p>
+                <div className="mt-5">
+                  <button
+                    onClick={onNavigateToShop}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#9f3c16] hover:bg-[#853212] text-white text-[13px] font-semibold transition-all cursor-pointer shadow-xs active:scale-95"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">storefront</span>
+                    <span>Browse Customer Storefront</span>
+                  </button>
+                </div>
+              </div>
+            ) : filteredOrders.length === 0 ? (
               <div className="bg-white p-12 rounded-2xl border border-[#efe6e3] text-center">
                 <span className="material-symbols-outlined text-[42px] text-[#8a726a] mb-2">
-                  inbox
+                  search_off
                 </span>
                 <h3 className="font-serif text-[20px] text-[#1e1b19]">No Orders Found</h3>
                 <p className="text-[13px] text-[#57423b] mt-1">

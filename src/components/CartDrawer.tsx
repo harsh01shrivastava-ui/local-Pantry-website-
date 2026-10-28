@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CartItem } from '../types';
-import { CustomerOrder } from '../types/auth';
+import { CustomerOrder, UserProfile } from '../types/auth';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -11,6 +11,7 @@ interface CartDrawerProps {
   onClearCart: () => void;
   onExplore: () => void;
   onOrderCreated?: (order: CustomerOrder) => void;
+  currentUser?: UserProfile | null;
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({
@@ -22,6 +23,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onClearCart,
   onExplore,
   onOrderCreated,
+  currentUser,
 }) => {
   const [promoCode, setPromoCode] = useState('');
   const [appliedDiscount, setAppliedDiscount] = useState<number>(0);
@@ -31,17 +33,30 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   const [isGift, setIsGift] = useState(false);
   const [giftNote, setGiftNote] = useState('');
 
-  // Checkout form fields
+  // Checkout form fields - prepopulated from active customer session or clean defaults
   const [customerInfo, setCustomerInfo] = useState({
-    name: 'Ananya Mehta',
-    phone: '9820012345',
-    email: 'ananya.mehta@example.com',
-    address: 'Flat 402, Sea View Apartments, Bandra West',
-    pincode: '400050',
-    city: 'Mumbai',
-    state: 'Maharashtra',
+    name: currentUser?.name || '',
+    phone: currentUser?.phone || '',
+    email: currentUser?.email || '',
+    address: currentUser?.address || '',
+    pincode: '327001',
+    city: currentUser?.city || 'Banswara',
+    state: 'Rajasthan',
     paymentMethod: 'UPI' as 'UPI' | 'COD' | 'Card',
   });
+
+  useEffect(() => {
+    if (currentUser) {
+      setCustomerInfo((prev) => ({
+        ...prev,
+        name: currentUser.name || prev.name,
+        phone: currentUser.phone || prev.phone,
+        email: currentUser.email || prev.email,
+        address: currentUser.address || prev.address,
+        city: currentUser.city || prev.city,
+      }));
+    }
+  }, [currentUser]);
 
   const [orderPlaced, setOrderPlaced] = useState<{
     id: string;

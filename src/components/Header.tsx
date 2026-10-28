@@ -201,7 +201,13 @@ export const Header: React.FC<HeaderProps> = ({
                 ? 'bg-[#516444] text-white hover:bg-[#435338] ring-2 ring-[#516444]/30'
                 : 'bg-[#9f3c16] text-white hover:bg-[#bf542c]'
             }`}
-            title={isOwner ? 'Store Owner Account (Click to manage)' : 'Customer Account'}
+            title={
+              isOwner
+                ? 'Store Owner Account (Chef Vikas Oli)'
+                : currentUser?.username
+                ? `@${currentUser.username} (Account)`
+                : 'Customer Account'
+            }
           >
             {currentUser?.avatarInitials || <span className="material-symbols-outlined text-[18px]">person</span>}
           </button>
